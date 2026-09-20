@@ -1,0 +1,14 @@
+torch
+torchvision
+transformers
+sentence-transformers
+scikit-learn
+pandas
+numpy
+scipy
+matplotlib
+gymnasium
+stable-baselines3
+joblib
+pydantic
+PyYAML

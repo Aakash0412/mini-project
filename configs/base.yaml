@@ -1,0 +1,22 @@
+hardware:
+  device: auto
+  max_ram_gb: 8
+  use_mps: true
+
+feature_extraction:
+  image_batch_size: 8
+  text_batch_size: 16
+  sentiment_batch_size: 4
+  num_workers: 0
+
+logging:
+  level: INFO
+
+paths:
+  raw_data: data/raw
+  interim_data: data/interim
+  processed_data: data/processed
+  models: models
+  checkpoints: checkpoints
+  logs: logs
+  reports: reports
