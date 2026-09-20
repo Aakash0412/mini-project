@@ -1,0 +1,7 @@
+split:
+  train_months: [1, 2, 3, 4, 5, 6]
+  val_months: [7, 8]
+  test_months: [9, 10]
+  # IMPLEMENTATION DECISION: The paper does not explicitly state the chronological boundaries of the split.
+  # To avoid future leakage and ensure robust evaluation on unseen future data,
+  # the chronological split assigns the first 6 months to train, next 2 to validation, and last 2 to testing.
