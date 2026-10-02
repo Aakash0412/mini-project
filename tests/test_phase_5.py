@@ -20,7 +20,8 @@ def test_model_config_exists():
     with open("models/sales_predictor/config.json") as f:
         cfg = json.load(f)
     assert "input_dim" in cfg
-    assert cfg["input_dim"] == 80   # 79 state + 1 action
+    assert cfg["input_dim"] == 112   # 111 state + 1 action
+    assert cfg.get("state_dim") == 111
 
 
 def test_model_metrics_exist():
@@ -47,7 +48,7 @@ def test_predictor_forward_shape():
     from src.models.sales_predictor import load_frozen_predictor
     model = load_frozen_predictor(device=torch.device("cpu"))
     model.eval()
-    x = torch.randn(8, 80)
+    x = torch.randn(8, 112)
     with torch.no_grad():
         out = model(x)
     assert out.shape == (8,), f"Expected (8,), got {out.shape}"
@@ -58,7 +59,7 @@ def test_predictor_no_nan():
     from src.models.sales_predictor import load_frozen_predictor
     model = load_frozen_predictor(device=torch.device("cpu"))
     model.eval()
-    x = torch.randn(32, 80)
+    x = torch.randn(32, 112)
     with torch.no_grad():
         out = model(x)
     assert not torch.isnan(out).any()
@@ -70,7 +71,7 @@ def test_predict_method():
     from src.models.sales_predictor import load_frozen_predictor
     model = load_frozen_predictor(device=torch.device("cpu"))
     model.eval()
-    state  = torch.randn(4, 79)
+    state  = torch.randn(4, 111)
     action = torch.tensor([0.0, 10.0, 20.0, 40.0])
     with torch.no_grad():
         out = model.predict(state, action)

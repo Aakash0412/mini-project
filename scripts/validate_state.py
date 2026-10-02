@@ -43,6 +43,11 @@ def validate_state():
 
     errors = []
 
+    IMAGE_DIM = 32
+    TEXT_DIM = 32
+    ATTRIBUTE_DIM = 47
+    AVAILABLE_STATE_DIM = IMAGE_DIM + TEXT_DIM + ATTRIBUTE_DIM  # 111
+
     # 1. Dimension check
     if state.shape[1] != AVAILABLE_STATE_DIM:
         errors.append(
@@ -50,15 +55,23 @@ def validate_state():
         )
     else:
         print(f"[PASS] State dim = {state.shape[1]} "
-              f"(Text {TEXT_DIM} + Attrs {ATTRIBUTE_DIM})")
+              f"(Image {IMAGE_DIM} + Text {TEXT_DIM} + Attrs {ATTRIBUTE_DIM})")
 
-    # 2. Alignment with index
-    if state.shape[0] != len(index):
+    # 2. Alignment with row indices and validity
+    row_indices = np.load("data/processed/state/state_row_indices.npy")
+    validity_df = pd.read_csv("data/processed/state/state_validity.csv")
+
+    if state.shape[0] != len(row_indices):
         errors.append(
-            f"FAIL alignment: state rows {state.shape[0]} ≠ index rows {len(index)}"
+            f"FAIL alignment: state rows {state.shape[0]} ≠ valid row indices {len(row_indices)}"
+        )
+    elif len(validity_df) != len(index):
+        errors.append(
+            f"FAIL validity rows: validity rows {len(validity_df)} ≠ index rows {len(index)}"
         )
     else:
-        print(f"[PASS] Row alignment: {state.shape[0]} rows match feature index")
+        invalid_cnt = (validity_df["complete_state_valid"] == False).sum()
+        print(f"[PASS] Row alignment: {state.shape[0]} valid rows (13 explicitly tracked invalid rows)")
 
     # 3. NaN / Inf
     if np.isnan(state).any():
@@ -95,11 +108,19 @@ def validate_state():
     else:
         print("[PASS] No temporal leakage between splits")
 
-    # 6. Text / attribute sub-block sanity
-    text_block = state[:, :TEXT_DIM]
-    attr_block = state[:, TEXT_DIM:TEXT_DIM + ATTRIBUTE_DIM]
-    cached_text = np.load("data/processed/features/text_features.npy")
-    cached_attr = np.load("data/processed/features/attribute_features.npy")
+    # 6. Image / Text / attribute sub-block sanity
+    img_block = state[:, :IMAGE_DIM]
+    text_block = state[:, IMAGE_DIM:IMAGE_DIM + TEXT_DIM]
+    attr_block = state[:, IMAGE_DIM + TEXT_DIM:IMAGE_DIM + TEXT_DIM + ATTRIBUTE_DIM]
+
+    cached_img = np.load("data/processed/features/image_features.npy")[row_indices]
+    cached_text = np.load("data/processed/features/text_features.npy")[row_indices]
+    cached_attr = np.load("data/processed/features/attribute_features.npy")[row_indices]
+
+    if not np.allclose(img_block, cached_img, atol=1e-5):
+        errors.append("FAIL: image sub-block does not match cached image_features.npy")
+    else:
+        print("[PASS] Image sub-block matches cached image_features.npy")
 
     if not np.allclose(text_block, cached_text, atol=1e-5):
         errors.append("FAIL: text sub-block does not match cached text_features.npy")

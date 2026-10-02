@@ -1,216 +1,321 @@
-﻿"""
-Resumable ResNet-50 + JL Projection Feature Extraction Pipeline (Phase 2.5)
---------------------------------------------------------------------------
-Extracts 32-D visual features for all unique product images using:
-  ResNet-50 (2048-D) -> Deterministic JL Projection P_ij ~ N(0, 1/32) -> 32-D
-
-Features are extracted ONCE per unique image, then mapped back to all 34,041 observations.
-Independent resumability via:
-  - Checkpoint array: data/processed/features/image_features_unique_checkpoint.npy
-  - Progress metadata: data/processed/features/extraction_progress.json
-
-Outputs:
-  - data/processed/features/image_features_unique.npy      (N_unique, 32)
-  - data/processed/features/image_features.npy             (34041, 32)
-  - data/processed/features/image_feature_mapping.csv      Mapping metadata
-"""
-
-import io
-import json
 import os
-import sys
-import time
-from typing import List, Dict, Any
+import hashlib
 import numpy as np
 import pandas as pd
+import torch
+import torchvision.transforms as transforms
 from PIL import Image
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src.features.image_encoder import ImageEncoder
-
-
-BATCH_SIZE = 16
-CHECKPOINT_INTERVAL = 500
+from torch.utils.data import Dataset, DataLoader
+from torchvision.models import resnet50, ResNet50_Weights
 
 
-def run_feature_extraction(
-    csv_path: str = "data/raw/products.csv",
-    images_dir: str = "data/processed/images",
-    features_dir: str = "data/processed/features",
-    device: str = "cpu",
-    batch_size: int = BATCH_SIZE
-):
-    print("=" * 60)
-    print("PHASE 2.5: RESUMABLE IMAGE FEATURE EXTRACTION PIPELINE")
-    print("=" * 60)
+# ============================================================
+# Configuration
+# ============================================================
 
-    os.makedirs(features_dir, exist_ok=True)
-    unique_manifest_path = os.path.join(images_dir, "unique_image_manifest.csv")
-    checkpoint_npy_path = os.path.join(features_dir, "image_features_unique_checkpoint.npy")
-    progress_json_path = os.path.join(features_dir, "extraction_progress.json")
-    final_unique_npy_path = os.path.join(features_dir, "image_features_unique.npy")
-    final_full_npy_path = os.path.join(features_dir, "image_features.npy")
-    mapping_csv_path = os.path.join(features_dir, "image_feature_mapping.csv")
+MANIFEST_PATH = "data/processed/images/image_manifest.csv"
+OUTPUT_DIR = "data/processed/features"
+FEATURE_PATH = os.path.join(OUTPUT_DIR, "image_features.npy")
+STATUS_PATH = os.path.join(OUTPUT_DIR, "image_feature_status.csv")
 
-    if not os.path.exists(unique_manifest_path):
-        raise FileNotFoundError(
-            f"Unique image manifest not found at {unique_manifest_path}. "
-            "Run scripts/download_images.py first."
-        )
+BATCH_SIZE = 32
+NUM_WORKERS = 0
 
-    print(f"Loading unique image manifest from: {unique_manifest_path}")
-    unique_df = pd.read_csv(unique_manifest_path)
-    
-    # Sort deterministically by image_id
-    unique_df = unique_df.sort_values(by="image_id").reset_index(drop=True)
-    total_unique = len(unique_df)
-    print(f"Total unique images in manifest: {total_unique:,}")
+IMAGE_DIM = 2048
+TARGET_DIM = 32
 
-    # Check for valid/cached images
-    valid_mask = unique_df["download_status"].isin(["cached", "downloaded"]) & unique_df["local_path"].notnull()
-    valid_df = unique_df[valid_mask].copy().reset_index(drop=True)
-    print(f"Valid images ready for feature extraction: {len(valid_df):,} / {total_unique:,}")
+SEED = 42
 
-    if len(valid_df) == 0:
-        raise ValueError("No valid images available to extract features from.")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # Initialize ImageEncoder
-    print(f"\nInitializing ImageEncoder (device={device}, seed=42)...")
-    encoder = ImageEncoder(device=device, seed=42)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
 
-    # Initialize or load checkpoint
-    num_valid = len(valid_df)
-    completed_indices = set()
-    features_32 = np.zeros((num_valid, 32), dtype=np.float32)
 
-    if os.path.exists(checkpoint_npy_path) and os.path.exists(progress_json_path):
+# ============================================================
+# Device
+# ============================================================
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+print("=" * 60)
+print("RESNET-50 IMAGE FEATURE EXTRACTION")
+print("=" * 60)
+print(f"Device: {DEVICE}")
+print(f"Batch size: {BATCH_SIZE}")
+print(f"Output dimension: {TARGET_DIM}")
+
+
+# ============================================================
+# Load manifest
+# ============================================================
+
+df = pd.read_csv(MANIFEST_PATH)
+
+available_mask = df["download_status"].isin(["downloaded", "cached"])
+
+available_df = df[available_mask].copy()
+missing_df = df[~available_mask].copy()
+
+print()
+print(f"Total dataset rows : {len(df)}")
+print(f"Available images   : {len(available_df)}")
+print(f"Missing images     : {len(missing_df)}")
+
+
+# ============================================================
+# ResNet-50
+# ============================================================
+
+print()
+print("Loading ResNet-50 pretrained weights...")
+
+weights = ResNet50_Weights.DEFAULT
+model = resnet50(weights=weights)
+
+# Remove final classification layer.
+model.fc = torch.nn.Identity()
+
+model = model.to(DEVICE)
+model.eval()
+
+print("ResNet-50 loaded.")
+print(f"Feature dimension before projection: {IMAGE_DIM}")
+
+
+# ============================================================
+# Deterministic 2048 -> 32 projection
+# ============================================================
+
+print()
+print("Creating deterministic 2048 -> 32 projection...")
+
+rng = np.random.RandomState(SEED)
+
+projection = rng.normal(
+    loc=0.0,
+    scale=1.0 / np.sqrt(TARGET_DIM),
+    size=(IMAGE_DIM, TARGET_DIM),
+).astype(np.float32)
+
+projection_tensor = torch.from_numpy(projection).to(DEVICE)
+
+print("Projection created.")
+
+
+# ============================================================
+# Image preprocessing
+# ============================================================
+
+transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225],
+    ),
+])
+
+
+# ============================================================
+# Dataset
+# ============================================================
+
+class AmazonImageDataset(Dataset):
+
+    def __init__(self, dataframe):
+        self.dataframe = dataframe.reset_index(drop=True)
+
+    def __len__(self):
+        return len(self.dataframe)
+
+    def __getitem__(self, idx):
+        row = self.dataframe.iloc[idx]
+
+        path = str(row["local_path"])
+
+        # Normalize Windows path separators.
+        path = path.replace("\\", os.sep)
+
         try:
-            with open(progress_json_path, "r") as f:
-                progress = json.load(f)
-            completed_indices = set(progress.get("completed_indices", []))
-            loaded_checkpoint = np.load(checkpoint_npy_path)
-            if loaded_checkpoint.shape == (num_valid, 32):
-                features_32 = loaded_checkpoint
-                print(f"Resumed from checkpoint: {len(completed_indices):,} / {num_valid:,} features already extracted.")
-            else:
-                print("Warning: Checkpoint shape mismatch. Restarting extraction from scratch.")
-                completed_indices = set()
-        except Exception as ex:
-            print(f"Warning: Could not load checkpoint ({ex}). Restarting.")
-            completed_indices = set()
+            image = Image.open(path).convert("RGB")
+            image = transform(image)
 
-    # Identify pending indices
-    pending_indices = [i for i in range(num_valid) if i not in completed_indices]
-    print(f"Pending features to extract: {len(pending_indices):,}")
+            return (
+                image,
+                int(row["row_id"]),
+                True,
+                "",
+            )
 
-    if pending_indices:
-        t0 = time.time()
-        batch_images = []
-        batch_indices = []
-        extracted_this_run = 0
-
-        for idx in pending_indices:
-            row = valid_df.iloc[idx]
-            img_path = str(row["local_path"])
-            try:
-                img = Image.open(img_path)
-                if img.mode != "RGB":
-                    img = img.convert("RGB")
-                batch_images.append(img)
-                batch_indices.append(idx)
-            except Exception as e:
-                print(f"Warning: Corrupt local file at {img_path} ({e})")
-                continue
-
-            # When batch is full or at end
-            if len(batch_images) >= batch_size or idx == pending_indices[-1]:
-                _, b_feat_32 = encoder.encode_pil_images(batch_images)
-                for b_idx, feat_vec in zip(batch_indices, b_feat_32):
-                    features_32[b_idx] = feat_vec
-                    completed_indices.add(b_idx)
-
-                extracted_this_run += len(batch_images)
-                batch_images = []
-                batch_indices = []
-
-                # Periodic checkpointing
-                if extracted_this_run % CHECKPOINT_INTERVAL == 0 or len(completed_indices) == num_valid:
-                    elapsed = time.time() - t0
-                    speed = extracted_this_run / max(elapsed, 0.001)
-                    print(
-                        f"[{len(completed_indices):,}/{num_valid:,}] "
-                        f"Extracted: {extracted_this_run:,} | Speed: {speed:.1f} img/s | "
-                        f"Elapsed: {elapsed:.0f}s"
-                    )
-                    # Save checkpoint
-                    np.save(checkpoint_npy_path, features_32)
-                    with open(progress_json_path, "w") as f:
-                        json.dump({
-                            "completed_indices": list(completed_indices),
-                            "total": num_valid,
-                            "timestamp": time.time()
-                        }, f)
-
-    # Save final unique features array
-    np.save(final_unique_npy_path, features_32)
-    print(f"\nSaved final unique feature array ({features_32.shape}) to: {final_unique_npy_path}")
-
-    # Build unique URL to feature index lookup table
-    valid_df["unique_feature_index"] = np.arange(len(valid_df))
-    url_to_idx = dict(zip(valid_df["image_url"], valid_df["unique_feature_index"]))
-    id_to_idx = dict(zip(valid_df["image_id"], valid_df["unique_feature_index"]))
-
-    # Map back to full dataset rows
-    print(f"Loading raw dataset from {csv_path} for full row alignment...")
-    raw_df = pd.read_csv(csv_path, encoding="cp1252")
-    total_raw_rows = len(raw_df)
-    
-    full_features = np.zeros((total_raw_rows, 32), dtype=np.float32)
-    mapping_rows = []
-    missing_features_count = 0
-
-    for row_id, (_, row) in enumerate(raw_df.iterrows()):
-        asin = row.get("ASIN", "")
-        url = str(row.get("Main Image URL", ""))
-        feat_idx = url_to_idx.get(url)
-
-        if feat_idx is not None:
-            full_features[row_id] = features_32[feat_idx]
-            mapping_rows.append({
-                "row_id": row_id,
-                "ASIN": asin,
-                "image_url": url,
-                "image_id": valid_df.iloc[feat_idx]["image_id"],
-                "unique_feature_index": feat_idx
-            })
-        else:
-            missing_features_count += 1
-            mapping_rows.append({
-                "row_id": row_id,
-                "ASIN": asin,
-                "image_url": url,
-                "image_id": None,
-                "unique_feature_index": -1
-            })
-
-    # Save full aligned features array and mapping CSV
-    np.save(final_full_npy_path, full_features)
-    mapping_df = pd.DataFrame(mapping_rows)
-    mapping_df.to_csv(mapping_csv_path, index=False)
-
-    print(f"Saved full row-aligned image features array ({full_features.shape}) to: {final_full_npy_path}")
-    print(f"Saved feature mapping metadata ({len(mapping_df):,} rows) to: {mapping_csv_path}")
-
-    # Integrity verification
-    assert full_features.shape == (total_raw_rows, 32), f"Expected shape ({total_raw_rows}, 32), got {full_features.shape}"
-    assert np.isfinite(full_features).all(), "Full feature matrix contains NaN or Inf"
-    print("\nFeature Extraction Complete & Verified:")
-    print(f"  Full Matrix Shape: {full_features.shape}")
-    print(f"  Missing Features: {missing_features_count}")
-    print(f"  Global Mean: {full_features.mean():.4f}")
-    print(f"  Global Std:  {full_features.std():.4f}")
-    return full_features, mapping_df
+        except Exception as exc:
+            return (
+                torch.zeros(3, 224, 224),
+                int(row["row_id"]),
+                False,
+                str(exc),
+            )
 
 
-if __name__ == "__main__":
-    run_feature_extraction()
+dataset = AmazonImageDataset(available_df)
+
+loader = DataLoader(
+    dataset,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
+    num_workers=NUM_WORKERS,
+    pin_memory=False,
+)
+
+
+# ============================================================
+# Allocate full dataset feature matrix
+# ============================================================
+
+# NaN means no valid image feature exists for that dataset row.
+all_features = np.full(
+    (len(df), TARGET_DIM),
+    np.nan,
+    dtype=np.float32,
+)
+
+status_records = []
+
+processed = 0
+successful = 0
+failed = 0
+
+
+# ============================================================
+# Extraction
+# ============================================================
+
+print()
+print("Starting feature extraction...")
+print()
+
+with torch.no_grad():
+
+    for batch_idx, batch in enumerate(loader):
+
+        images, row_ids, valid_flags, errors = batch
+
+        valid_flags = valid_flags.bool()
+
+        if valid_flags.any():
+
+            valid_images = images[valid_flags].to(DEVICE)
+
+            # ResNet-50 2048-D representation.
+            features_2048 = model(valid_images)
+
+            # Deterministic 2048 -> 32 projection.
+            features_32 = features_2048 @ projection_tensor
+
+            features_32 = features_32.cpu().numpy()
+
+            valid_row_ids = row_ids[valid_flags].numpy()
+
+            for i, row_id in enumerate(valid_row_ids):
+                all_features[row_id] = features_32[i]
+
+                status_records.append({
+                    "row_id": int(row_id),
+                    "status": "success",
+                    "error": "",
+                })
+
+                successful += 1
+
+        # Record failures.
+        for i in range(len(row_ids)):
+
+            if not bool(valid_flags[i]):
+
+                status_records.append({
+                    "row_id": int(row_ids[i]),
+                    "status": "failed",
+                    "error": str(errors[i]),
+                })
+
+                failed += 1
+
+        processed += len(row_ids)
+
+        if batch_idx % 10 == 0 or processed == len(dataset):
+            print(
+                f"Processed {processed}/{len(dataset)} "
+                f"| Successful: {successful} "
+                f"| Failed: {failed}"
+            )
+
+
+# ============================================================
+# Add explicit missing-image rows
+# ============================================================
+
+for _, row in missing_df.iterrows():
+
+    status_records.append({
+        "row_id": int(row["row_id"]),
+        "status": "missing_image",
+        "error": str(row.get("error_message", "")),
+    })
+
+
+# ============================================================
+# Save
+# ============================================================
+
+print()
+print("Saving feature matrix...")
+
+np.save(FEATURE_PATH, all_features)
+
+status_df = pd.DataFrame(status_records)
+status_df = status_df.sort_values("row_id")
+
+status_df.to_csv(
+    STATUS_PATH,
+    index=False,
+)
+
+
+# ============================================================
+# Validation
+# ============================================================
+
+valid_feature_rows = np.isfinite(all_features).all(axis=1)
+
+print()
+print("=" * 60)
+print("EXTRACTION COMPLETE")
+print("=" * 60)
+
+print(f"Dataset rows              : {len(df)}")
+print(f"Available image rows      : {len(available_df)}")
+print(f"Successful feature rows   : {valid_feature_rows.sum()}")
+print(f"Missing/failed rows       : {(~valid_feature_rows).sum()}")
+
+print(f"Feature matrix shape      : {all_features.shape}")
+print(f"Expected shape            : ({len(df)}, {TARGET_DIM})")
+
+print(
+    f"NaN values                : "
+    f"{np.isnan(all_features).sum()}"
+)
+
+print(
+    f"Inf values                : "
+    f"{np.isinf(all_features).sum()}"
+)
+
+print()
+print(f"Feature file: {FEATURE_PATH}")
+print(f"Status file : {STATUS_PATH}")
+
+# Release resources.
+del model
+if DEVICE.type == "cuda":
+    torch.cuda.empty_cache()

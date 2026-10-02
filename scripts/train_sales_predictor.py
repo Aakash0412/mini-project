@@ -229,7 +229,10 @@ def main():
     # ── Load state and dataset ────────────────────────────────
     state = np.load("data/processed/state/state.npy")
     df = pd.read_parquet("data/processed/products_clean.parquet").reset_index(drop=True)
-    assert len(state) == len(df), "State / dataset length mismatch"
+    if os.path.exists("data/processed/state/state_row_indices.npy"):
+        row_indices = np.load("data/processed/state/state_row_indices.npy")
+        df = df.iloc[row_indices].reset_index(drop=True)
+    assert len(state) == len(df), f"State / dataset length mismatch: {len(state)} vs {len(df)}"
 
     X, y = prepare_data(state, df)
 
@@ -328,10 +331,12 @@ def main():
 
     # ── Save metadata alongside weights ──────────────────────
     config = {
-        "architecture": "MLP: 80→256→BN→128→BN→64→1  (IMPLEMENTATION DECISION)",
-        "input_dim": input_dim,
+        "architecture": f"MLP: {input_dim}→256→BN→128→BN→64→1 (ItaNet-111 Predictor)",
+        "input_dim": int(input_dim),
         "state_dim": int(state.shape[1]),
         "action_dim": 1,
+        "discount_bins": DISCOUNT_BINS,
+        "target": "Estimated Monthly Sales Growth Rate",
         "activation": "ReLU",
         "optimizer": "Adam",
         "lr": 1e-3,

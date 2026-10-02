@@ -26,7 +26,7 @@ def preprocess_dataset():
     if not os.path.exists(raw_path):
         return
         
-    df = pd.read_csv(raw_path, encoding='utf-8', encoding_errors='replace', low_memory=False)
+    df = pd.read_csv(raw_path, encoding='cp1252', low_memory=False)
     
     # Clean numeric columns
     numeric_cols = [
