@@ -1,0 +1,27 @@
+{
+  "checkpoint": "models\\ppo_transfer\\ppo_transfer_supported_8action_1000_updates.pth",
+  "reward_config": "balanced",
+  "alpha_margin": 0.5,
+  "beta_quantity": 0.5,
+  "mc_samples": 20,
+  "lambda_penalty": 0.0,
+  "validation_calibration_samples": 6002,
+  "validation_spearman_uncertainty_vs_absolute_error": 0.37563828625532036,
+  "test_samples": 7139,
+  "mean_ppo_simulated_reward": 0.4291504992140464,
+  "mean_risk_selected_simulated_reward": 0.5022267497351522,
+  "mean_oracle_simulated_reward": 0.5022267497351522,
+  "mean_ppo_oracle_gap": 0.07307625052110592,
+  "mean_risk_oracle_gap": 0.0,
+  "action_change_rate": 0.8771536629780081,
+  "mean_ppo_reward_std": 0.12704994647927415,
+  "mean_risk_selected_reward_std": 0.13671288061866627,
+  "risk_reward_retention_vs_ppo_percent": 117.02811732828901,
+  "caveats": [
+    "Rewards are model-based counterfactual estimates, not live-market outcomes.",
+    "MC-dropout spread is a heuristic uncertainty proxy, not automatically a calibrated prediction interval.",
+    "Validation calibration measures historical observed-discount pairs only.",
+    "The oracle is optimal under this learned simulator, not ground truth.",
+    "The environment is one-step and margin is a dataset-derived proxy."
+  ]
+}

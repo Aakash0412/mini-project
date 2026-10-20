@@ -1,0 +1,7 @@
+metric,paper,v1,v2,comparable_to_paper
+mean_profit_margin_growth,>16.7% (Eq.8 full cost),31.39% (rev*GMR proxy),0.381618,partial
+mean_sales_growth,-0.3% to -2.0%,+22.55% (aggregate simulated),0.378028,yes in definition
+paper_reward_balanced,cumulative G Jan-Oct,0.3848 (one-step),0.379823 (one-step),partial
+top1_profit_growth,52.32% (3563/6810),25.69% (margin proxy),see micro_topk_v2.csv (heuristics only),partial
+top3_sales_growth,74.33% (5062/6810),85.92% (sales result),see micro_topk_v2.csv (heuristics only),partial
+robustness_retention_10pct,92.8% (Table 12),99.864%,see robustness_v2.csv,yes in protocol

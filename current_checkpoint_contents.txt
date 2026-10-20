@@ -1,0 +1,41 @@
+
+======================================================================
+FILE: models\ppo\ppo_batched_economic_50_updates.pth
+======================================================================
+actor_state_dict: parameter tensors=6
+critic_state_dict: parameter tensors=6
+actor_optimizer_state_dict: parameter tensors=2
+critic_optimizer_state_dict: parameter tensors=2
+config: {'gamma': 0.9, 'gae_lambda': 0.8, 'clip_epsilon': 0.2, 'entropy_coefficient': 0.01, 'value_coefficient': 0.5, 'batch_size': 64, 'update_epochs': 4, 'max_grad_norm': 0.5}
+updates: 500
+batch_size: 64
+seed: 42
+training_samples: 19382
+total_decisions: 32000
+state_dim: 111
+action_dim: 9
+reward: paper-style delta margin + delta quantity
+economic_environment: True
+chronological_training_split: Jan-Jun 2023
+
+======================================================================
+FILE: models\ppo\ppo_batched_supported_8action_500_updates.pth
+======================================================================
+actor_state_dict: parameter tensors=6
+critic_state_dict: parameter tensors=6
+actor_optimizer_state_dict: parameter tensors=2
+critic_optimizer_state_dict: parameter tensors=2
+config: {'gamma': 0.9, 'gae_lambda': 0.8, 'clip_epsilon': 0.2, 'entropy_coefficient': 0.01, 'value_coefficient': 0.5, 'batch_size': 64, 'update_epochs': 4, 'max_grad_norm': 0.5}
+updates: 1000
+batch_size: 64
+seed: 42
+training_samples: 19382
+total_decisions: 64000
+state_dim: 111
+action_dim: 8
+discount_actions: [5, 10, 15, 20, 25, 30, 35, 40]
+reward: paper-style delta margin + delta quantity
+economic_environment: True
+chronological_training_split: Jan-Jun 2023
+experiment: 8-action observed-support PPO
+excluded_action: 0% - outside observed training support

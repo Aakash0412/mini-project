@@ -1,0 +1,528 @@
+﻿========== 1. PROJECT LOCATION ==========
+
+Path                                     
+----                                     
+D:\College\Semesters\6th Sem\mini-project
+
+========== 2. GIT STATUS ==========
+ M scripts/evaluate_ppo_transfer.py
+ M scripts/train_ppo_transfer.py
+ M src/transfer/ppo_warmstart.py
+?? app.py
+?? evaluation_audit_bundle.txt
+?? ppo_agent_review.txt
+?? project_diagnostics.txt
+?? scripts/algorithm_comparison/
+?? scripts/analyze_economic_robustness.py
+?? scripts/audit_next_step_capabilities.py
+?? scripts/audit_paper_evaluation.py
+?? scripts/audit_ppo_actions_by_discount.py
+?? scripts/audit_ppo_paired_comparisons.py
+?? scripts/audit_test_results.py
+?? scripts/build_state_train_only.py
+?? scripts/compare_ppo_baselines.py
+?? scripts/compare_ppo_initial_trained.py
+?? scripts/compare_pricing_baselines.py
+?? scripts/diagnose_ppo_robustness.py
+?? scripts/diagnose_ppo_state_sensitivity.py
+?? scripts/diagnose_ppo_transfer_robustness.py
+?? scripts/evaluate_ppo_economic_robustness.py
+?? scripts/evaluate_ppo_policy.py
+?? scripts/evaluate_ppo_rankings.py
+?? scripts/evaluate_ppo_reproduction.py
+?? scripts/evaluate_ppo_statistics.py
+?? scripts/evaluate_ppo_transfer.py.backup_20261013_115609
+?? scripts/evaluate_ppo_transfer_robustness.py
+?? scripts/evaluate_uncertainty_aware_pricing.py
+?? scripts/extract_attributes_train_only.py
+?? scripts/paired_ppo_vs_fixed20.py
+?? scripts/rescore_ppo_reward_weights.py
+?? scripts/review_reward_evaluation_source.py
+?? scripts/run_profit_robustness_multiseed.py
+?? scripts/run_robustness_multiseed.py
+?? scripts/train_ppo_transfer.py.backup_20261013_115609
+?? scripts/train_sales_predictor_train_only.py
+?? src/models/baselines/
+?? src/transfer/ppo_warmstart.py.backup_20261012_171249
+main
+
+========== 3. EVALUATION-RELATED SCRIPTS ==========
+
+
+
+Name                                            Length
+----                                            ------
+analyze_economic_robustness.py                    8600
+analyze_ppo_policy.py                            12089
+analyze_ppo_training.py                           3545
+analyze_reward_landscape.py                      10997
+audit_dataset.py                                  5120
+audit_image_urls.py                              13780
+audit_neorl_policy_distribution.py                6607
+audit_neorl_source_policy_actions.py              4430
+audit_next_step_capabilities.py                   6003
+audit_paper_evaluation.py                         7671
+audit_ppo_actions_by_discount.py                 13283
+audit_ppo_paired_comparisons.py                   9203
+audit_test_results.py                             2540
+audit_transfer_action_mapping.py                 17913
+compare_ppo_baselines.py                          8587
+compare_ppo_initial_trained.py                    3780
+compare_pricing_baselines.py                      4802
+diagnose_ppo_robustness.py                        6840
+diagnose_ppo_state_sensitivity.py                 4299
+diagnose_ppo_transfer_robustness.py               6382
+diagnose_sales_predictor.py                      14835
+evaluate_policy_distillation.py                   8905
+evaluate_ppo.py                                  25578
+evaluate_ppo_economic_robustness.py              12894
+evaluate_ppo_policy.py                            4716
+evaluate_ppo_rankings.py                          6582
+evaluate_ppo_reproduction.py                     10201
+evaluate_ppo_statistics.py                        6593
+evaluate_ppo_transfer.py                         25501
+evaluate_ppo_transfer.py.backup_20261013_115609  25607
+evaluate_ppo_transfer_robustness.py               9657
+evaluate_transfer_adapter.py                      9663
+evaluate_uncertainty_aware_pricing.py            15221
+paired_ppo_vs_fixed20.py                          2693
+rescore_ppo_reward_weights.py                     5496
+review_reward_evaluation_source.py                4002
+run_profit_robustness_multiseed.py                3657
+run_robustness.py                                27371
+run_robustness_multiseed.py                       3719
+smoke_test_ppo.py                                 5511
+train_ppo.py                                     16955
+train_ppo_transfer.py                            27530
+train_ppo_transfer.py.backup_20261013_115609     27697
+train_ppo_warmstart.py                           11196
+train_sales_predictor.py                         15690
+train_sales_predictor_robust.py                  16769
+train_sales_predictor_train_only.py              11326
+train_transfer_adapter.py                        13015
+
+
+
+========== 4. RELEVANT SOURCE CODE ==========
+
+--- .\src\models\sales_predictor.py ---
+
+LineNumber Line                                                                                           
+---------- ----                                                                                           
+         2 Sales Predictor Module — Phase 5                                                               
+         5   SalesPredictorMLP   — the trained MLP architecture                                           
+         6   load_frozen_predictor() — loads weights and freezes the model for PPO use                    
+         9 should use to query sales response. The predictor's weights must not be                        
+        19 class SalesPredictorMLP(nn.Module):                                                            
+        21     MLP Sales Predictor.                                                                       
+        25     See docs/SALES_PREDICTOR_SPECIFICATION.md for justification.                               
+        28     def __init__(self, input_dim: int):                                                        
+        44     def forward(self, x: torch.Tensor) -> torch.Tensor:                                        
+        47     def predict(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:              
+        52             state:  (B, state_dim) float tensor                                                
+        53             action: (B,) or (B, 1) float tensor — discount percentage                          
+        56             predicted sales growth: (B,) float tensor                                          
+        58         if action.ndim == 1:                                                                   
+        59             action = action.unsqueeze(-1)                                                      
+        60         x = torch.cat([state, action], dim=-1)                                                 
+        64 def load_frozen_predictor(                                                                     
+        65     checkpoint_dir: str = "models/sales_predictor",                                            
+        67 ) -> SalesPredictorMLP:                                                                        
+        69     Load the trained sales predictor and freeze all parameters.                                
+        79         Frozen SalesPredictorMLP                                                               
+        89             f"Weights not found at {weights_path}. Run scripts/train_sales_predictor.py first."
+        95     model = SalesPredictorMLP(input_dim=config["input_dim"])                                   
+        99     # FREEZE — critical: PPO must not update the predictor                                     
+
+
+
+--- .\src\models\itanet.py ---
+
+LineNumber Line                                                         
+---------- ----                                                         
+        58 PAPER_STATE_DIM = (                                          
+        70 AVAILABLE_STATE_DIM = (                                      
+        77 class ItaNetStateBuilder:                                    
+        93     def __init__(                                            
+       124     def _validate_inputs(self):                              
+       187     def build(self) -> np.ndarray:                           
+       247     def state_dim(self) -> int:                              
+       266     def modality_report(self) -> dict:                       
+       277             "state_dim": self.state_dim,                     
+       278             "paper_state_dim": PAPER_STATE_DIM,              
+       279             "available_state_dim": AVAILABLE_STATE_DIM,      
+       280             "missing_dims": PAPER_STATE_DIM - self.state_dim,
+
+
+
+--- .\src\transfer\ppo_warmstart.py ---
+
+LineNumber Line                                                                        
+---------- ----                                                                        
+        24 class PPOWarmStartConfig:                                                   
+        25     state_dim: int = 111                                                    
+        26     action_dim: int = 8                                                     
+        41 # Source-action -> target-discount mapping                                  
+        44 TARGET_DISCOUNTS = np.array(                                                
+        59 class WarmStartActor(torch.nn.Module):                                      
+        67         8 action logits corresponding to:                                   
+        72     def __init__(                                                           
+        74         state_dim: int = 111,                                               
+        75         action_dim: int = 8,                                                
+        81             state_dim,                                                      
+        83             action_dim,                                                     
+        99             if out_dim != action_dim:                                       
+       108     def forward(                                                            
+       114                 f"Expected [N, state_dim], got {tuple(state.shape)}"        
+       129 def gaussian_discount_distribution(                                         
+       130     mean_action: torch.Tensor,                                              
+       131     std_action: torch.Tensor,                                               
+       134     Convert the NeoRL Gaussian coupon-factor action into probabilities      
+       135     over target discounts [5, 10, 15, 20, 25, 30, 35, 40]%.                 
+       143     The target discount order is increasing while source centers are        
+       147     if mean_action.ndim != 2 or std_action.ndim != 2:                       
+       149             "mean_action and std_action must have shape [batch, action_dim]"
+       152     if mean_action.shape != std_action.shape:                               
+       154             "mean_action and std_action must have identical shapes"         
+       157     if mean_action.shape[1] < 2:                                            
+       158         raise ValueError("Expected source action dimension >= 2")           
+       160     mean = mean_action[:, 1]                                                
+       161     std = std_action[:, 1].clamp_min(1e-6)                                  
+       163     # Must match src/transfer/action_mapping.py and the project's           
+       164     # canonical source-to-target action mapping.                            
+       180     # Output columns remain ordered as discounts [5, 10, ..., 40].          
+       203 def load_adapter(                                                           
+       218         target_state_dim=int(                                               
+       219             config_dict["target_state_dim"]                                 
+       221         source_state_dim=int(                                               
+       222             config_dict["source_state_dim"]                                 
+       247 def load_source_policy(                                                     
+       261         state_dim=int(                                                      
+       262             config_dict["state_dim"]                                        
+       264         action_dim=int(                                                     
+       265             config_dict["action_dim"]                                       
+       299 def build_transfer_targets(                                                 
+       309     mean_action, std_action, _ = (                                          
+       316         gaussian_discount_distribution(                                     
+
+
+
+--- .\scripts\evaluate_ppo_transfer.py ---
+
+LineNumber Line                                                                      
+---------- ----                                                                      
+        21 from src.environment.reward import get_reward_config                      
+        29 # New 8-action observed-support PPO checkpoint.                           
+        31     "models/ppo_transfer/ppo_transfer_supported_8action_1000_updates.pth" 
+        35     "models/ppo_transfer/transfer_supported_8action_policy_evaluation.csv"
+        41 # PPO action 0 -> 5%                                                      
+        42 # PPO action 1 -> 10%                                                     
+        43 # PPO action 2 -> 15%                                                     
+        44 # PPO action 3 -> 20%                                                     
+        45 # PPO action 4 -> 25%                                                     
+        46 # PPO action 5 -> 30%                                                     
+        47 # PPO action 6 -> 35%                                                     
+        48 # PPO action 7 -> 40%                                                     
+        56 # Therefore we translate PPO actions using:                               
+        57 # environment_action = ppo_action + 1                                     
+        59 DISCOUNT_BINS = [                                                         
+        70 STATE_DIM = 111                                                           
+        71 ACTION_DIM = 8                                                            
+        76 def parse_args():                                                         
+        78         description="Evaluate a trained 8-action PPO pricing policy."     
+        89         "--reward-config", choices=("sales", "balanced", "profit"),       
+        90         default="sales", help="Reward configuration for evaluation."      
+        99 def load_agent(checkpoint_path: Path) -> PPOAgent:                        
+       100     """Load the trained 8-action PPO actor and critic."""                 
+       114     checkpoint_action_dim = checkpoint.get(                               
+       115         "action_dim",                                                     
+       119     if checkpoint_action_dim is not None:                                 
+       120         if int(checkpoint_action_dim) != ACTION_DIM:                      
+       122                 "Checkpoint action dimension mismatch. "                  
+       123                 f"Expected {ACTION_DIM}, "                                
+       124                 f"found {checkpoint_action_dim}."                         
+       128         state_dim=STATE_DIM,                                              
+       129         action_dim=ACTION_DIM,                                            
+       149 # Deterministic action selection                                          
+       152 def select_deterministic_action(                                          
+       157     Select the highest-probability PPO action.                            
+       179         action = torch.argmax(                                            
+       184     return int(action)                                                    
+       188 # Relative reward calculation                                             
+       191 def calculate_relative_reward(                                            
+       192     delta_margin: float,                                                  
+       193     delta_quantity: float,                                                
+       194     baseline_margin: float,                                               
+       195     baseline_quantity: float,                                             
+       200     Calculate the normalized relative economic reward.                    
+       204         relative_delta_quantity =                                         
+
+
+
+--- .\scripts\evaluate_uncertainty_aware_pricing.py ---
+
+LineNumber Line                                                                                                 
+---------- ----                                                                                                 
+        19 from src.environment.reward import get_reward_config                                                 
+        21 from src.models.sales_predictor import load_frozen_predictor                                         
+        23 DISCOUNTS = np.array([5, 10, 15, 20, 25, 30, 35, 40], dtype=np.float64)                              
+        24 STATE_DIM = 111                                                                                      
+        25 ACTION_DIM = len(DISCOUNTS)                                                                          
+        29 def parse_args():                                                                                    
+        35         default=Path("models/ppo_transfer/ppo_transfer_supported_8action_1000_updates.pth"),         
+        37     parser.add_argument("--reward-config", choices=("sales", "balanced", "profit"), default="sales") 
+        46 def load_actor(checkpoint_path: Path) -> nn.Module:                                                  
+        50     if int(checkpoint.get("action_dim", ACTION_DIM)) != ACTION_DIM:                                  
+        51         raise ValueError(f"Expected an {ACTION_DIM}-action PPO checkpoint.")                         
+        53         state_dim=STATE_DIM, action_dim=ACTION_DIM,                                                  
+        61 def deterministic_actions(actor: nn.Module, states: np.ndarray, batch_size: int) -> np.ndarray:      
+        72 def predict_mc_growth(                                                                               
+        79     """Return growth predictions shaped (MC samples, products, 8 discounts)."""                      
+        89     predictions = []                                                                                 
+        96                 repeated_states = np.repeat(batch_states, ACTION_DIM, axis=0)                        
+        97                 repeated_discounts = np.tile(DISCOUNTS.astype(np.float32), n).reshape(-1, 1)         
+        99                 discount_tensor = torch.as_tensor(repeated_discounts, dtype=torch.float32)           
+       100                 pred = model.predict(state_tensor, discount_tensor).cpu().numpy()                    
+       101                 chunks.append(pred.reshape(n, ACTION_DIM))                                           
+       102         predictions.append(np.concatenate(chunks, axis=0))                                           
+       107     return np.stack(predictions, axis=0)                                                             
+       110 def reward_samples_for_product(growth: np.ndarray, product, alpha: float, beta: float) -> np.ndarray:
+       111     """Vectorize existing economics/reward formulas; growth shape is (MC, 8)."""                     
+       113     observed_discount = float(product.observed_discount)                                             
+       114     baseline_sales = float(product.last_monthly_sales)                                               
+       115     margin_rate = float(product.gross_margin_rate)                                                   
+       119         observed_discount=observed_discount,                                                         
+       120         last_monthly_sales=baseline_sales,                                                           
+       121         predicted_growth_rate=0.0,                                                                   
+       122         candidate_discount=observed_discount,                                                        
+       123         gross_margin_rate=margin_rate,                                                               
+       125     baseline_margin = float(baseline.estimated_margin)                                               
+       127     reference_price = observed_price / (1.0 - observed_discount / 100.0)                             
+       128     candidate_prices = reference_price * (1.0 - DISCOUNTS / 100.0)                                   
+       129     estimated_sales = np.maximum(                                                                    
+       130         0.0, baseline_sales * (1.0 + growth / 100.0)                                                 
+       132     estimated_revenue = estimated_sales * candidate_prices[None, :]                                  
+       133     estimated_margin = estimated_revenue * margin_rate / 100.0                                       
+       135     relative_quantity = (                                                                            
+       136         estimated_sales - baseline_sales                                                             
+       137     ) / max(abs(baseline_sales), EPSILON)                                                            
+       138     relative_margin = (                                                                              
+       139         estimated_margin - baseline_margin                                                           
+
+
+
+--- .\scripts\audit_test_results.py ---
+
+LineNumber Line                                                                          
+---------- ----                                                                          
+        13     / "transfer_supported_8action_policy_evaluation.csv"                      
+        21 test = df.loc[df["split"] == "test"].copy()                                   
+        23 if test.empty:                                                                
+        24     raise ValueError("No test rows found in the evaluation CSV.")             
+        27     "ppo_reward",                                                             
+        28     "oracle_reward",                                                          
+        29     "ppo_sales",                                                              
+        30     "oracle_sales",                                                           
+        32     "oracle_revenue",                                                         
+        33     "ppo_margin",                                                             
+        34     "oracle_margin",                                                          
+        35     "baseline_sales",                                                         
+        36     "baseline_margin",                                                        
+        40     test[col] = pd.to_numeric(test[col], errors="raise")                      
+        42 if not np.isfinite(test[numeric_cols].to_numpy()).all():                      
+        43     raise ValueError("Non-finite numerical values found in test rows.")       
+        45 ppo_reward = test["ppo_reward"].mean()                                        
+        46 oracle_reward = test["oracle_reward"].mean()                                  
+        48 print("\n========== HELD-OUT TEST RESULTS ==========")                        
+        49 print(f"Test products: {len(test)}")                                          
+        50 print(f"PPO mean reward: {ppo_reward:.6f}")                                   
+        51 print(f"Oracle mean reward: {oracle_reward:.6f}")                             
+        52 print(f"Mean oracle gap: {(oracle_reward - ppo_reward):.6f}")                 
+        54 if abs(oracle_reward) > 1e-8:                                                 
+        55     print(f"PPO/oracle reward ratio: {100 * ppo_reward / oracle_reward:.2f}%")
+        57     print("PPO/oracle reward ratio: undefined (oracle mean near zero)")       
+        60     "Exact oracle action match: "                                             
+        61     f"{100 * (test['ppo_action'] == test['oracle_action']).mean():.2f}%"      
+        64 print("\nPPO discount distribution:")                                         
+        66     test["ppo_discount"]                                                      
+        75 print(f"Quantity change: {test['ppo_delta_quantity'].mean():.4f}")            
+        76 print(f"Margin change: {test['ppo_delta_margin'].mean():.4f}")                
+        80     "Quantity: "                                                              
+        81     f"{100 * test['ppo_relative_delta_quantity'].mean():.4f}% "               
+        85     "Margin: "                                                                
+        86     f"{100 * test['ppo_relative_delta_margin'].mean():.4f}% "                 
+        92     "Products with positive quantity change: "                                
+        93     f"{100 * (test['ppo_delta_quantity'] > 0).mean():.2f}%"                   
+        96     "Products with positive margin change: "                                  
+        97     f"{100 * (test['ppo_delta_margin'] > 0).mean():.2f}%"                     
+
+
+
+========== 5. REPORT DIRECTORIES ==========
+
+Name                               
+----                               
+ablation                           
+algorithm_comparison               
+base_paper_reproduction            
+evaluation_audit                   
+phase_2_5                          
+robustness                         
+sales_predictor_diagnostics        
+sales_predictor_train_only         
+sales_response_curves              
+transfer                           
+uncertainty_aware_pricing_lambda0  
+uncertainty_aware_pricing_lambda01 
+uncertainty_aware_pricing_lambda025
+uncertainty_aware_pricing_lambda05 
+uncertainty_aware_pricing_repeat123
+uncertainty_aware_pricing_smoke    
+validation                         
+
+
+
+========== 6. SAVED EVALUATION OUTPUTS ==========
+
+FullName                                                                                                                             Length
+--------                                                                                                                             ------
+D:\College\Semesters\6th Sem\mini-project\reports\methodology_audit_20261013_231434.txt                                              520209
+D:\College\Semesters\6th Sem\mini-project\reports\ablation\ablation_results.csv                                                        1100
+D:\College\Semesters\6th Sem\mini-project\reports\algorithm_comparison\algorithm_comparison_summary.csv                                 957
+D:\College\Semesters\6th Sem\mini-project\reports\algorithm_comparison\ddpg_test_evaluation.csv                                     1372421
+D:\College\Semesters\6th Sem\mini-project\reports\algorithm_comparison\ddqn_test_evaluation.csv                                     1147322
+D:\College\Semesters\6th Sem\mini-project\reports\algorithm_comparison\sac_test_evaluation.csv                                      1422026
+D:\College\Semesters\6th Sem\mini-project\reports\algorithm_comparison\paper_aligned_metrics\growth_summary.csv                        1936
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\ppo_test_action_distribution.csv                              196
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\ppo_test_predictions.csv                                  2377599
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\ppo_test_summary.json                                        1251
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\ppo_vs_fixed20_paired_bootstrap.csv                        429240
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\ppo_vs_fixed20_paired_bootstrap.json                          869
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\pricing_baseline_comparison.csv                               793
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\pricing_baseline_comparison.json                             2551
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\economic_robustness\economic_robustness_by_product.csv    8791445
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\economic_robustness\economic_robustness_metadata.json         963
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\economic_robustness\economic_robustness_summary.csv          1245
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\economic_robustness\paired_bootstrap_summary.csv             7413
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\economic_robustness\paired_bootstrap_summary.json             865
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\economic_robustness\ppo_vs_fixed20_paired.csv                1634
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\state_robustness\state_robustness_by_product.csv          1010707
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\state_robustness\state_robustness_metadata.json               702
+D:\College\Semesters\6th Sem\mini-project\reports\base_paper_reproduction\state_robustness\state_robustness_summary.csv                 810
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\next_step_capability_audit.json                                    10483
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\paper_evaluation_audit.json                                        11196
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\reward_evaluation_source_review.json                               13814
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\action_outcome_audit\action_outcome_audit.json                      2349
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\action_outcome_audit\ppo_outcomes_by_split_and_discount.csv         5160
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\action_outcome_audit\rescored_rewards_by_split_and_discount.csv     4023
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\action_outcome_audit\split_row_counts.csv                             53
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\final_baseline_comparison\by_product.csv                         3714593
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\final_baseline_comparison\metadata.json                             1055
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\final_baseline_comparison\summary.csv                               1157
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\paired_baseline_audit\paired_baseline_audit.json                    1742
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\paired_baseline_audit\paired_comparisons_by_discount.csv           14546
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\paired_baseline_audit\paired_comparison_summary.csv                 3862
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\reward_weight_rescoring\frozen_ppo_action_distribution.csv           651
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\reward_weight_rescoring\ppo_reward_weight_rescoring.json            4779
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\reward_weight_rescoring\ppo_reward_weight_rescoring_rows.csv    30631103
+D:\College\Semesters\6th Sem\mini-project\reports\evaluation_audit\reward_weight_rescoring\ppo_reward_weight_rescoring_summary.csv     1424
+D:\College\Semesters\6th Sem\mini-project\reports\phase_2_5\image_url_audit.json                                                      19122
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_aggregate.csv                                                   2536
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_all_runs.csv                                                    9033
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_metadata.json                                                    907
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\robustness_results.csv                                                    1141
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\robustness_summary.json                                                   1028
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_101\robustness_results.csv                            1143
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_101\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_102\robustness_results.csv                            1143
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_102\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_103\robustness_results.csv                            1141
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_103\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_104\robustness_results.csv                            1137
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_104\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_105\robustness_results.csv                            1144
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_105\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_106\robustness_results.csv                            1140
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_106\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_107\robustness_results.csv                            1144
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_107\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_108\robustness_results.csv                            1145
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_108\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_109\robustness_results.csv                            1146
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_109\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_110\robustness_results.csv                            1140
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\multiseed_runs\seed_110\robustness_summary.json                           1029
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\ppo_transfer_economic_robustness\by_product.csv                        4095945
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\ppo_transfer_economic_robustness\metadata.json                            1421
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\ppo_transfer_economic_robustness\summary.csv                              1156
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\ppo_transfer_state_sensitivity\by_product.csv                          1010959
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\ppo_transfer_state_sensitivity\metadata.json                               872
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\ppo_transfer_state_sensitivity\summary.csv                                 853
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\aggregate_summary.csv                        1644
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\all_seed_results.csv                         9104
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\metadata.json                                 931
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_101\robustness_results.csv              1153
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_101\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_102\robustness_results.csv              1149
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_102\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_103\robustness_results.csv              1147
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_103\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_104\robustness_results.csv              1147
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_104\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_105\robustness_results.csv              1152
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_105\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_106\robustness_results.csv              1143
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_106\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_107\robustness_results.csv              1148
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_107\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_108\robustness_results.csv              1146
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_108\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_109\robustness_results.csv              1150
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_109\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_110\robustness_results.csv              1147
+D:\College\Semesters\6th Sem\mini-project\reports\robustness\profit_entropy_005_multiseed\seed_110\robustness_summary.json             1058
+D:\College\Semesters\6th Sem\mini-project\reports\transfer\neorl_source_policy_action_audit.json                                       9592
+D:\College\Semesters\6th Sem\mini-project\reports\uncertainty_aware_pricing_lambda0\summary.json                                       1276
+D:\College\Semesters\6th Sem\mini-project\reports\uncertainty_aware_pricing_lambda0\test_policy_comparison.csv                      1371255
+D:\College\Semesters\6th Sem\mini-project\reports\uncertainty_aware_pricing_lambda0\validation_uncertainty_calibration_rows.csv      453710
+D:\College\Semesters\6th Sem\mini-project\reports\uncertainty_aware_pricing_lambda0\validation_uncertainty_calibration_summary.csv      708
+
+
+
+========== 7. CONFIGURATION AND TEST FILES ==========
+
+Name                                    Length
+----                                    ------
+README.md                                 1669
+requirements-dev.txt                        48
+requirements.txt                           161
+TRANSFER_ADAPTER_README.md                1022
+TRANSFER_DISTILLATION_README.md            963
+TRANSFER_SOFT_DISTILLATION_README.md      1281
+TRANSFER_SOFT_DISTILLATION_V2_README.md   1237
+
+
+
+Name                                     Length
+----                                     ------
+.gitkeep                                      0
+test_phase_0.py                            1897
+test_phase_2.py                            1453
+test_phase_4_state.py                      2394
+test_phase_5.py                            2970
+test_phase_8_counterfactual_simulator.py   9983
+test_policy_distillation.py                 834
+test_ppo_agent.py                          2952
+test_ppo_dataset.py                         987
+test_ppo_trainer.py                        4362
+test_ppo_warmstart.py                      1573
+test_pricing_economics.py                  3307
+test_pricing_environment.py                4569
+test_reward.py                             2012
+test_soft_policy_distillation.py           1008
+test_soft_policy_distillation_v2.py        1460
+test_transfer_adapter.py                    780
+
+
+
+========== COLLECTION COMPLETE ==========

@@ -1,0 +1,1100 @@
+﻿
+========== .\reports\evaluation_audit\paper_evaluation_audit.json ==========
+{
+  "read_only": true,
+  "model_training_performed": false,
+  "checkpoint_modified": false,
+  "artifacts": {
+    "ppo_evaluation": {
+      "path": "models\\ppo_transfer\\transfer_supported_8action_policy_evaluation.csv",
+      "exists": true
+    },
+    "predictor_ablation": {
+      "path": "reports\\ablation\\ablation_results.csv",
+      "exists": true
+    },
+    "robustness_results": {
+      "path": "reports\\robustness\\robustness_results.csv",
+      "exists": true
+    },
+    "robustness_summary": {
+      "path": "reports\\robustness\\robustness_summary.json",
+      "exists": true
+    },
+    "ppo_checkpoint": {
+      "path": "models\\ppo_transfer\\ppo_transfer_supported_8action_1000_updates.pth",
+      "exists": true
+    }
+  },
+  "evaluation": {
+    "ppo_evaluation_rows": 32523,
+    "columns": [
+      "split",
+      "source_row",
+      "observed_discount",
+      "ppo_action",
+      "ppo_discount",
+      "ppo_environment_action",
+      "ppo_reward",
+      "ppo_sales",
+      "ppo_revenue",
+      "ppo_margin",
+      "oracle_action",
+      "oracle_discount",
+      "oracle_environment_action",
+      "oracle_reward",
+      "oracle_sales",
+      "oracle_revenue",
+      "oracle_margin",
+      "baseline_sales",
+      "baseline_margin",
+      "ppo_delta_quantity",
+      "ppo_delta_margin",
+      "ppo_relative_delta_quantity",
+      "ppo_relative_delta_margin"
+    ],
+    "split_counts": {
+      "train": 19382,
+      "test": 7139,
+      "validation": 6002
+    },
+    "reward_by_split": {
+      "test": {
+        "count": 7139,
+        "mean": 0.38478386391372565,
+        "median": 0.2098641638755798,
+        "std": 0.6560671193573765,
+        "min": -0.0508719613207014,
+        "max": 15.332333217075892,
+        "q05": -0.0067582159726242395,
+        "q25": 0.0581990023781271,
+        "q75": 0.49408393977238574,
+        "q95": 1.1763588543312213
+      },
+      "train": {
+        "count": 19382,
+        "mean": 0.3081191127977761,
+        "median": 0.12287591930998476,
+        "std": 0.6938546308334952,
+        "min": -0.0598789132436117,
+        "max": 16.97662942504883,
+        "q05": -0.009509631792937928,
+        "q25": 0.03802715918154175,
+        "q75": 0.3522915204101138,
+        "q95": 1.020421366096946
+      },
+      "validation": {
+        "count": 6002,
+        "mean": 0.33307862750796097,
+        "median": 0.1783758562405904,
+        "std": 0.5266684920597265,
+        "min": -0.0560549769571848,
+        "max": 9.698260452270508,
+        "q05": -0.00856084650158876,
+        "q25": 0.051451913738250726,
+        "q75": 0.4448955106735229,
+        "q95": 1.0537937349373947
+      }
+    },
+    "test_ppo_vs_oracle": {
+      "rows": 7139,
+      "ppo_reward": {
+        "count": 7139,
+        "mean": 0.38478386391372565,
+        "median": 0.2098641638755798,
+        "std": 0.6560671193573765,
+        "min": -0.0508719613207014,
+        "max": 15.332333217075892,
+        "q05": -0.0067582159726242395,
+        "q25": 0.0581990023781271,
+        "q75": 0.49408393977238574,
+        "q95": 1.1763588543312213
+      },
+      "oracle_reward": {
+        "count": 7139,
+        "mean": 0.41499919829489135,
+        "median": 0.2391805667877197,
+        "std": 0.6679903697257588,
+        "min": 0.0018815156817435,
+        "max": 15.751972743443083,
+        "q05": 0.025475085378394418,
+        "q25": 0.0835523926211338,
+        "q75": 0.5273514918159037,
+        "q95": 1.2093192356236766
+      },
+      "mean_reward_ratio_percent": 92.7191824694333,
+      "mean_reward_gap": 0.030215334381165693,
+      "caveat": "Per-row oracle is an offline comparator, not a deployable policy and not necessarily the paper's comparator."
+    },
+    "product_ranking_metrics": {
+      "status": "not computed from this file alone",
+      "reason": "Top-1/Top-3 paper metrics need aligned per-product outcomes for each competing policy, not only PPO and oracle."
+    },
+    "predictor_ablation": [
+      {
+        "configuration": "attributes_only",
+        "description": "Attributes only",
+        "state_dim": 47,
+        "input_dim": 48,
+        "best_epoch": 19,
+        "train_mae": 91.17509082474004,
+        "train_rmse": 2610.794122927808,
+        "train_r2": 0.0137061296396898,
+        "validation_mae": 51.36943251053938,
+        "validation_rmse": 158.1125818173584,
+        "validation_r2": 0.1555674324107738,
+        "test_mae": 107.58985644240931,
+        "test_rmse": 1203.4857905320137,
+        "test_r2": 0.0479102310312794,
+        "test_median_ae": 27.89941692352295,
+        "test_bias": -66.53835607899046,
+        "test_pearson": 0.3964030110163812,
+        "test_spearman": 0.3721836620329275
+      },
+      {
+        "configuration": "attributes_text",
+        "description": "Attributes + Text",
+        "state_dim": 79,
+        "input_dim": 80,
+        "best_epoch": 12,
+        "train_mae": 91.61364267505353,
+        "train_rmse": 2611.3018545800355,
+        "train_r2": 0.013322475252225,
+        "validation_mae": 53.84008809525825,
+        "validation_rmse": 158.38427479736924,
+        "validation_r2": 0.1526628752192044,
+        "test_mae": 110.18191426469012,
+        "test_rmse": 1204.6917147941892,
+        "test_r2": 0.0460012373423538,
+        "test_median_ae": 32.5333833694458,
+        "test_bias": -55.58596829918281,
+        "test_pearson": 0.3912987227310136,
+        "test_spearman": 0.3970897134311631
+      },
+      {
+        "configuration": "attributes_text_image",
+        "description": "Attributes + Text + Image",
+        "state_dim": 111,
+        "input_dim": 112,
+        "best_epoch": 28,
+        "train_mae": 88.90992541475772,
+        "train_rmse": 2600.9238167833014,
+        "train_r2": 0.021149551061892,
+        "validation_mae": 54.45670898608876,
+        "validation_rmse": 160.69365178395353,
+        "validation_r2": 0.1277729432888739,
+        "test_mae": 110.98454469717156,
+        "test_rmse": 1203.069153465714,
+        "test_r2": 0.0485693285101561,
+        "test_median_ae": 28.993537545204163,
+        "test_bias": -63.87468203858579,
+        "test_pearson": 0.3830005035089633,
+        "test_spearman": 0.3025074209244355
+      }
+    ],
+    "robustness": [
+      {
+        "noise_fraction": 0.0,
+        "noise_std_absolute": 0.0,
+        "prediction_std_test": 63.95439506683543,
+        "mean_predicted_growth": 37.712192557423386,
+        "mean_absolute_noise": 0.0,
+        "mean_reward": 0.3847838639137256,
+        "reward_std": 0.656021168237071,
+        "reward_retention_percent": 100.0,
+        "reward_change": 0.0,
+        "reward_change_percent": 0.0,
+        "mean_estimated_sales": 3296.1010522613064,
+        "mean_estimated_revenue": 105996.26548095666,
+        "mean_estimated_margin": 69800.17517492,
+        "evaluated_products": 7139
+      },
+      {
+        "noise_fraction": 0.05,
+        "noise_std_absolute": 3.197719753341772,
+        "prediction_std_test": 63.95439506683543,
+        "mean_predicted_growth": 37.70035609945828,
+        "mean_absolute_noise": 2.551690131518051,
+        "mean_reward": 0.3846972316293748,
+        "reward_std": 0.657191254319611,
+        "reward_retention_percent": 99.97748546847322,
+        "reward_change": -8.663228435079606e-05,
+        "reward_change_percent": -0.0225145315267742,
+        "mean_estimated_sales": 3295.849590314247,
+        "mean_estimated_revenue": 106062.14398512212,
+        "mean_estimated_margin": 69840.13292976945,
+        "evaluated_products": 7139
+      },
+      {
+        "noise_fraction": 0.1,
+        "noise_std_absolute": 6.395439506683544,
+        "prediction_std_test": 63.95439506683543,
+        "mean_predicted_growth": 37.68851964149318,
+        "mean_absolute_noise": 5.103380263036102,
+        "mean_reward": 0.384610599345024,
+        "reward_std": 0.6599507084938495,
+        "reward_retention_percent": 99.95497093694644,
+        "reward_change": -0.0001732645687016,
+        "reward_change_percent": -0.045029063053563,
+        "mean_estimated_sales": 3295.598128367187,
+        "mean_estimated_revenue": 106128.02248928756,
+        "mean_estimated_margin": 69880.09068461887,
+        "evaluated_products": 7139
+      },
+      {
+        "noise_fraction": 0.15,
+        "noise_std_absolute": 9.593159260025317,
+        "prediction_std_test": 63.95439506683543,
+        "mean_predicted_growth": 37.67668318352807,
+        "mean_absolute_noise": 7.655070394554153,
+        "mean_reward": 0.3845239670606732,
+        "reward_std": 0.6642797240900723,
+        "reward_retention_percent": 99.93245640541969,
+        "reward_change": -0.0002598968530524,
+        "reward_change_percent": -0.0675435945803373,
+        "mean_estimated_sales": 3295.346666420128,
+        "mean_estimated_revenue": 106193.90099345302,
+        "mean_estimated_margin": 69920.0484394683,
+        "evaluated_products": 7139
+      }
+    ],
+    "robustness_metadata": {
+      "phase": 15,
+      "method": "Zero-mean Gaussian noise injected into frozen sales-growth predictions",
+      "checkpoint": "D:\\College\\Semesters\\6th Sem\\mini-project\\models\\ppo_transfer\\ppo_transfer_supported_8action_1000_updates.pth",
+      "state_dim": 111,
+      "action_dim": 8,
+      "discount_bins": [
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        35,
+        40
+      ],
+      "reward_alpha": 0.2,
+      "reward_beta": 0.8,
+      "test_products": 7139,
+      "prediction_mean_test": 37.712192557423386,
+      "prediction_std_test": 63.95439506683543,
+      "original_mean_reward": 0.38478386391372565,
+      "original_mean_growth": 37.712192557423386,
+      "noise_fractions": [
+        0.0,
+        0.05,
+        0.1,
+        0.15
+      ],
+      "random_seed": 42,
+      "same_standard_noise_across_levels": true,
+      "sentiment": "not applicable; review text unavailable",
+      "simulation_only": true,
+      "validation": {
+        "finite_results": true,
+        "noise_levels_valid": true,
+        "product_count_valid": true,
+        "sigma_zero_baseline_match": true
+      }
+    }
+  },
+  "paper_alignment": {
+    "predictor_metrics": "Available if ablation artifact exists; these are not policy metrics.",
+    "macro_reward_distribution": "Can summarize per-product PPO reward rows; this audit calculates descriptive statistics.",
+    "three_reward_settings": "Must verify/run sales-oriented (0.2,0.8), balanced (0.5,0.5), and profit-oriented (0.8,0.2) separately.",
+    "micro_product_rankings": "Requires per-product outcomes from all compared policies; cannot be inferred from PPO-vs-oracle alone.",
+    "algorithm_baselines": "Incomplete unless comparable heuristic, bandit, DRL, and Transformer evaluation outputs exist.",
+    "robustness": "Separate simulated Gaussian-noise experiment; does not establish real-world robustness.",
+    "reproduction_caveat": "Current PPO uses 8 supported discounts (5%-40%); paper describes 9 actions including 0%."
+  },
+  "limitations": []
+}
+
+========== .\reports\evaluation_audit\reward_evaluation_source_review.json ==========
+{
+  "read_only": true,
+  "execution_performed": false,
+  "training_performed": false,
+  "checkpoint_modified": false,
+  "sources": {
+    "scripts/evaluate_ppo_transfer.py": {
+      "exists": true,
+      "path": "scripts/evaluate_ppo_transfer.py",
+      "matches": [
+        {
+          "start_line": 16,
+          "end_line": 27,
+          "text": "16: import torch\n17: \n18: from src.environment.ppo_dataset import load_ppo_dataset\n19: from src.environment.pricing_environment import DynamicPricingEnvironment\n20: from src.models.ppo_agent import PPOAgent\n21: \n22: \n23: # ---------------------------------------------------------------------\n24: # Configuration\n25: # ---------------------------------------------------------------------\n26: \n27: # New 8-action observed-support PPO checkpoint."
+        },
+        {
+          "start_line": 29,
+          "end_line": 56,
+          "text": "29:     \"models/ppo_transfer/ppo_transfer_supported_8action_1000_updates.pth\"\n30: )\n31: \n32: OUTPUT_PATH = Path(\n33:     \"models/ppo_transfer/transfer_supported_8action_policy_evaluation.csv\"\n34: )\n35: \n36: # IMPORTANT:\n37: # The PPO actor has 8 outputs.\n38: #\n39: # PPO action 0 -> 5%\n40: # PPO action 1 -> 10%\n41: # PPO action 2 -> 15%\n42: # PPO action 3 -> 20%\n43: # PPO action 4 -> 25%\n44: # PPO action 5 -> 30%\n45: # PPO action 6 -> 35%\n46: # PPO action 7 -> 40%\n47: #\n48: # The DynamicPricingEnvironment internally uses:\n49: # 0 -> 0%\n50: # 1 -> 5%\n51: # ...\n52: # 8 -> 40%\n53: #\n54: # Therefore we translate PPO actions using:\n55: # environment_action = ppo_action + 1\n56: #"
+        },
+        {
+          "start_line": 75,
+          "end_line": 95,
+          "text": "75: # Model loading\n76: # ---------------------------------------------------------------------\n77: \n78: def load_agent(checkpoint_path: Path) -> PPOAgent:\n79:     \"\"\"Load the trained 8-action PPO actor and critic.\"\"\"\n80: \n81:     if not checkpoint_path.exists():\n82:         raise FileNotFoundError(\n83:             f\"Checkpoint not found: {checkpoint_path}\"\n84:         )\n85: \n86:     checkpoint = torch.load(\n87:         checkpoint_path,\n88:         map_location=\"cpu\",\n89:         weights_only=False,\n90:     )\n91: \n92:     # Validate checkpoint metadata if available.\n93:     checkpoint_action_dim = checkpoint.get(\n94:         \"action_dim\",\n95:         None,"
+        },
+        {
+          "start_line": 145,
+          "end_line": 164,
+          "text": "145: \n146:     with torch.no_grad():\n147: \n148:         output = agent.actor(\n149:             state_tensor\n150:         )\n151: \n152:         # Actor may return logits directly or a distribution.\n153:         if hasattr(output, \"logits\"):\n154:             logits = output.logits\n155:         else:\n156:             logits = output\n157: \n158:         action = torch.argmax(\n159:             logits,\n160:             dim=-1,\n161:         ).item()\n162: \n163:     return int(action)\n164: "
+        },
+        {
+          "start_line": 221,
+          "end_line": 232,
+          "text": "221: # Main evaluation\n222: # ---------------------------------------------------------------------\n223: \n224: def main():\n225: \n226:     print(\"=\" * 70)\n227:     print(\"8-ACTION PPO ECONOMIC POLICY VALIDATION\")\n228:     print(\"=\" * 70)\n229: \n230:     print()\n231:     print(f\"Checkpoint: {CHECKPOINT}\")\n232: "
+        },
+        {
+          "start_line": 303,
+          "end_line": 320,
+          "text": "303:     # Create pricing environment\n304:     # -----------------------------------------------------------------\n305: \n306:     environment = DynamicPricingEnvironment()\n307: \n308:     # Make sure evaluation and training use the same reward\n309:     # configuration.\n310: \n311:     alpha = environment.reward_config.alpha\n312:     beta = environment.reward_config.beta\n313: \n314:     print()\n315:     print(\"Reward configuration:\")\n316:     print(\n317:         f\"  Alpha (margin):   {alpha}\"\n318:     )\n319:     print(\n320:         f\"  Beta (quantity):  {beta}\""
+        },
+        {
+          "start_line": 447,
+          "end_line": 459,
+          "text": "447:                     delta_quantity=ppo_delta_quantity,\n448:                     baseline_margin=baseline_margin,\n449:                     baseline_quantity=baseline_sales,\n450:                     alpha=alpha,\n451:                     beta=beta,\n452:                 )\n453:             )\n454: \n455:             # ---------------------------------------------------------\n456:             # Exhaustive counterfactual search\n457:             #\n458:             # IMPORTANT:\n459:             # The oracle for this experiment must use ONLY:"
+        },
+        {
+          "start_line": 501,
+          "end_line": 513,
+          "text": "501:                         delta_quantity=delta_quantity,\n502:                         baseline_margin=baseline_margin,\n503:                         baseline_quantity=baseline_sales,\n504:                         alpha=alpha,\n505:                         beta=beta,\n506:                     )\n507:                 )\n508: \n509:                 oracle_values[\n510:                     environment_action\n511:                 ] = oracle_reward\n512: \n513:             if not oracle_values:"
+        },
+        {
+          "start_line": 696,
+          "end_line": 713,
+          "text": "696:     # Save evaluation\n697:     # -----------------------------------------------------------------\n698: \n699:     OUTPUT_PATH.parent.mkdir(\n700:         parents=True,\n701:         exist_ok=True,\n702:     )\n703: \n704:     results_df.to_csv(\n705:         OUTPUT_PATH,\n706:         index=False,\n707:     )\n708: \n709:     # -----------------------------------------------------------------\n710:     # Evaluation summary\n711:     # -----------------------------------------------------------------\n712: \n713:     print()"
+        },
+        {
+          "start_line": 964,
+          "end_line": 975,
+          "text": "964: \n965:     print(\n966:         f\"Saved evaluation: \"\n967:         f\"{OUTPUT_PATH}\"\n968:     )\n969: \n970: \n971: # ---------------------------------------------------------------------\n972: # Entry point\n973: # ---------------------------------------------------------------------\n974: \n975: if __name__ == \"__main__\":"
+        }
+      ]
+    },
+    "src/environment/reward.py": {
+      "exists": true,
+      "path": "src/environment/reward.py",
+      "matches": [
+        {
+          "start_line": 24,
+          "end_line": 35,
+          "text": "24: \n25: \n26: @dataclass(frozen=True)\n27: class RewardConfig:\n28:     \"\"\"Configuration for the paper-style reward.\"\"\"\n29: \n30:     name: str\n31:     alpha: float\n32:     beta: float\n33: \n34:     def __post_init__(self) -> None:\n35:         if self.alpha < 0 or self.beta < 0:"
+        },
+        {
+          "start_line": 40,
+          "end_line": 63,
+          "text": "40: \n41: \n42: # Paper-aligned reward configurations.\n43: SALES_REWARD = RewardConfig(\n44:     name=\"sales\",\n45:     alpha=0.2,\n46:     beta=0.8,\n47: )\n48: \n49: BALANCED_REWARD = RewardConfig(\n50:     name=\"balanced\",\n51:     alpha=0.5,\n52:     beta=0.5,\n53: )\n54: \n55: PROFIT_REWARD = RewardConfig(\n56:     name=\"profit\",\n57:     alpha=0.8,\n58:     beta=0.2,\n59: )\n60: \n61: \n62: REWARD_CONFIGS: Dict[str, RewardConfig] = {\n63:     \"sales\": SALES_REWARD,"
+        },
+        {
+          "start_line": 66,
+          "end_line": 77,
+          "text": "66: }\n67: \n68: \n69: def get_reward_config(name: str) -> RewardConfig:\n70:     \"\"\"\n71:     Return a predefined reward configuration.\n72: \n73:     Parameters\n74:     ----------\n75:     name:\n76:         One of: \"sales\", \"balanced\", \"profit\".\n77:     \"\"\""
+        },
+        {
+          "start_line": 86,
+          "end_line": 97,
+          "text": "86:     return REWARD_CONFIGS[key]\n87: \n88: \n89: def calculate_reward(\n90:     delta_margin: float,\n91:     delta_quantity: float,\n92:     config: RewardConfig = SALES_REWARD,\n93: ) -> float:\n94:     \"\"\"\n95:     Calculate the paper-style weighted reward.\n96: \n97:     Formula:"
+        },
+        {
+          "start_line": 123,
+          "end_line": 134,
+          "text": "123:     return float(reward)\n124: \n125: \n126: def calculate_reward_from_config(\n127:     delta_margin: float,\n128:     delta_quantity: float,\n129:     config_name: str = \"sales\",\n130: ) -> float:\n131:     \"\"\"\n132:     Convenience wrapper using a named reward configuration.\n133:     \"\"\"\n134: "
+        },
+        {
+          "start_line": 141,
+          "end_line": 152,
+          "text": "141:     )\n142: \n143: \n144: def reward_breakdown(\n145:     delta_margin: float,\n146:     delta_quantity: float,\n147:     config: RewardConfig = SALES_REWARD,\n148: ) -> Dict[str, float]:\n149:     \"\"\"\n150:     Return the individual reward contributions.\n151: \n152:     Useful for debugging and experiment reporting."
+        }
+      ]
+    },
+    "src/environment/pricing_environment.py": {
+      "exists": true,
+      "path": "src/environment/pricing_environment.py",
+      "matches": [
+        {
+          "start_line": 7,
+          "end_line": 18,
+          "text": "7: \n8: from src.environment.counterfactual_simulator import (\n9:     CounterfactualSimulator,\n10:     DISCOUNT_BINS,\n11: )\n12: from src.environment.pricing_economics import calculate_pricing_outcome\n13: from src.environment.reward import (\n14:     RewardConfig,\n15:     SALES_REWARD,\n16:     calculate_reward,\n17: )\n18: "
+        },
+        {
+          "start_line": 32,
+          "end_line": 43,
+          "text": "32:     gross_margin_rate: Optional[float] = None\n33: \n34: \n35: class DynamicPricingEnvironment:\n36:     \"\"\"\n37:     Economic counterfactual environment for dynamic pricing.\n38: \n39:     State:\n40:         111-D ItaNet state.\n41: \n42:     Action:\n43:         One of the 9 paper-defined discount levels:"
+        },
+        {
+          "start_line": 70,
+          "end_line": 106,
+          "text": "70:     \"\"\"\n71: \n72:     STATE_DIM = 111\n73:     ACTION_DIM = len(DISCOUNT_BINS)\n74: \n75:     def __init__(\n76:         self,\n77:         simulator: Optional[CounterfactualSimulator] = None,\n78:         reward_config: RewardConfig = SALES_REWARD,\n79:     ) -> None:\n80:         self.simulator = (\n81:             simulator\n82:             if simulator is not None\n83:             else CounterfactualSimulator()\n84:         )\n85: \n86:         self.reward_config = reward_config\n87: \n88:         self.state: Optional[np.ndarray] = None\n89:         self.product: Optional[ProductContext] = None\n90: \n91:         self.observed_outcome = None\n92:         self.last_outcome = None\n93:         self.last_action: Optional[int] = None\n94: \n95:     # -----------------------------------------------------------------\n96:     # Reset\n97:     # -----------------------------------------------------------------\n98:     def reset(\n99:         self,\n100:         state: np.ndarray,\n101:         product: ProductContext,\n102:     ) -> np.ndarray:\n103:         \"\"\"\n104:         Reset the environment for one product/state.\n105:         \"\"\"\n106: "
+        },
+        {
+          "start_line": 176,
+          "end_line": 187,
+          "text": "176:             )\n177: \n178:         return float(\n179:             DISCOUNT_BINS[action]\n180:         )\n181: \n182:     # -----------------------------------------------------------------\n183:     # Internal readiness check\n184:     # -----------------------------------------------------------------\n185:     def _require_ready(self) -> None:\n186:         if (\n187:             self.state is None"
+        },
+        {
+          "start_line": 247,
+          "end_line": 258,
+          "text": "247:     # -----------------------------------------------------------------\n248:     # Step\n249:     # -----------------------------------------------------------------\n250:     def step(\n251:         self,\n252:         action: int,\n253:     ):\n254:         \"\"\"\n255:         Execute one pricing action.\n256: \n257:         The reward is calculated relative to the observed product\n258:         baseline rather than relative to the previous arbitrary"
+        },
+        {
+          "start_line": 335,
+          "end_line": 346,
+          "text": "335:         reward = calculate_reward(\n336:             delta_margin=relative_delta_margin,\n337:             delta_quantity=relative_delta_quantity,\n338:             config=self.reward_config,\n339:         )\n340: \n341:         self.last_action = int(action)\n342:         self.last_outcome = outcome\n343: \n344:         predicted_growth = float(\n345:             self.simulator.predict(\n346:                 self.state,"
+        },
+        {
+          "start_line": 423,
+          "end_line": 435,
+          "text": "423:                 self.observed_outcome.estimated_margin\n424:             ),\n425: \n426:             \"reward_config\": (\n427:                 self.reward_config.name\n428:             ),\n429: \n430:             # ---------------------------------------------------------\n431:             # Important support flag\n432:             #\n433:             # The released dataset has observed discounts of 5\u201340%.\n434:             # Therefore 0% is part of the paper's action space but is\n435:             # outside the observed training support."
+        }
+      ]
+    }
+  }
+}
+
+========== .\reports\evaluation_audit\next_step_capability_audit.json ==========
+{
+  "read_only": true,
+  "training_performed": false,
+  "checkpoint_modified": false,
+  "purpose": "Determine whether current scripts support reward-weight evaluation and what baseline/environment code exists before adding or running experiments.",
+  "files": {
+    "src/environment/reward.py": {
+      "path": "src\\environment\\reward.py",
+      "exists": true,
+      "line_count": 166,
+      "classes": [
+        "RewardConfig"
+      ],
+      "functions": [
+        "get_reward_config",
+        "calculate_reward",
+        "calculate_reward_from_config",
+        "reward_breakdown"
+      ],
+      "cli_flags": [],
+      "reward_weight_mentions": [
+        "            f\"Available configurations: {list(REWARD_CONFIGS.keys())}\"",
+        "            raise ValueError(\"alpha + beta must equal 1.\")",
+        "            raise ValueError(\"alpha and beta must be non-negative.\")",
+        "        \"alpha\": config.alpha,",
+        "        \"beta\": config.beta,",
+        "        + config.beta * float(delta_quantity)",
+        "        Reward configuration containing alpha and beta.",
+        "        config.alpha * float(delta_margin)",
+        "        if abs((self.alpha + self.beta) - 1.0) > 1e-8:",
+        "        if self.alpha < 0 or self.beta < 0:",
+        "        reward = alpha * Delta_M + beta * Delta_Q",
+        "    \"balanced\": BALANCED_REWARD,",
+        "    \"profit\": PROFIT_REWARD,",
+        "    \"sales\": SALES_REWARD,",
+        "    alpha: float",
+        "    alpha=0.2,",
+        "    alpha=0.5,",
+        "    alpha=0.8,",
+        "    beta: float",
+        "    beta=0.2,",
+        "    beta=0.5,",
+        "    beta=0.8,",
+        "    config = get_reward_config(config_name)",
+        "    config: RewardConfig = SALES_REWARD,",
+        "    if key not in REWARD_CONFIGS:",
+        "    margin_component = config.alpha * float(delta_margin)",
+        "    quantity_component = config.beta * float(delta_quantity)",
+        "    r_t = alpha * Delta_M_t + beta * Delta_Q_t",
+        "    return REWARD_CONFIGS[key]",
+        "BALANCED_REWARD = RewardConfig(",
+        "PROFIT_REWARD = RewardConfig(",
+        "REWARD_CONFIGS: Dict[str, RewardConfig] = {",
+        "SALES_REWARD = RewardConfig(",
+        "def get_reward_config(name: str) -> RewardConfig:"
+      ],
+      "action_space_mentions": []
+    },
+    "scripts/evaluate_ppo_transfer.py": {
+      "path": "scripts\\evaluate_ppo_transfer.py",
+      "exists": true,
+      "line_count": 976,
+      "classes": [],
+      "functions": [
+        "load_agent",
+        "select_deterministic_action",
+        "calculate_relative_reward",
+        "main"
+      ],
+      "cli_flags": [],
+      "reward_weight_mentions": [
+        "                        alpha=alpha,",
+        "                        beta=beta,",
+        "                    alpha=alpha,",
+        "                    beta=beta,",
+        "            + beta * relative_delta_quantity",
+        "            alpha * relative_delta_margin",
+        "        + beta * relative_delta_quantity",
+        "        alpha * relative_delta_margin",
+        "        f\"  Alpha (margin):   {alpha}\"",
+        "        f\"  Beta (quantity):  {beta}\"",
+        "    alpha = environment.reward_config.alpha",
+        "    alpha: float,",
+        "    beta = environment.reward_config.beta",
+        "    beta: float,"
+      ],
+      "action_space_mentions": [
+        "                        DISCOUNT_BINS[",
+        "                    f\"Expected 0..{ACTION_DIM - 1}.\"",
+        "                0 <= ppo_action < ACTION_DIM",
+        "                f\"Expected {ACTION_DIM}, \"",
+        "                f\"found {checkpoint_action_dim}.\"",
+        "            ACTION_DIM - 1,",
+        "            DISCOUNT_BINS",
+        "            for discount in DISCOUNT_BINS",
+        "        \"action_dim\",",
+        "        action_dim=ACTION_DIM,",
+        "        f\"Action dimension: {ACTION_DIM}\"",
+        "        f\"{'PASS' if valid_discounts else 'FAIL'}\"",
+        "        for discount in DISCOUNT_BINS:",
+        "        if int(checkpoint_action_dim) != ACTION_DIM:",
+        "    checkpoint_action_dim = checkpoint.get(",
+        "    if checkpoint_action_dim is not None:",
+        "    valid_discounts = (",
+        "ACTION_DIM = 8",
+        "DISCOUNT_BINS = ["
+      ]
+    },
+    "scripts/evaluate_ppo.py": {
+      "path": "scripts\\evaluate_ppo.py",
+      "exists": true,
+      "line_count": 976,
+      "classes": [],
+      "functions": [
+        "load_agent",
+        "select_deterministic_action",
+        "calculate_relative_reward",
+        "main"
+      ],
+      "cli_flags": [],
+      "reward_weight_mentions": [
+        "                        alpha=alpha,",
+        "                        beta=beta,",
+        "                    alpha=alpha,",
+        "                    beta=beta,",
+        "            + beta * relative_delta_quantity",
+        "            alpha * relative_delta_margin",
+        "        + beta * relative_delta_quantity",
+        "        alpha * relative_delta_margin",
+        "        f\"  Alpha (margin):   {alpha}\"",
+        "        f\"  Beta (quantity):  {beta}\"",
+        "    alpha = environment.reward_config.alpha",
+        "    alpha: float,",
+        "    beta = environment.reward_config.beta",
+        "    beta: float,"
+      ],
+      "action_space_mentions": [
+        "                        DISCOUNT_BINS[",
+        "                    f\"Expected 0..{ACTION_DIM - 1}.\"",
+        "                0 <= ppo_action < ACTION_DIM",
+        "                f\"Expected {ACTION_DIM}, \"",
+        "                f\"found {checkpoint_action_dim}.\"",
+        "            ACTION_DIM - 1,",
+        "            DISCOUNT_BINS",
+        "            for discount in DISCOUNT_BINS",
+        "        \"action_dim\",",
+        "        action_dim=ACTION_DIM,",
+        "        f\"Action dimension: {ACTION_DIM}\"",
+        "        f\"{'PASS' if valid_discounts else 'FAIL'}\"",
+        "        for discount in DISCOUNT_BINS:",
+        "        if int(checkpoint_action_dim) != ACTION_DIM:",
+        "    checkpoint_action_dim = checkpoint.get(",
+        "    if checkpoint_action_dim is not None:",
+        "    valid_discounts = (",
+        "ACTION_DIM = 8",
+        "DISCOUNT_BINS = ["
+      ]
+    },
+    "scripts/run_robustness.py": {
+      "path": "scripts\\run_robustness.py",
+      "exists": true,
+      "line_count": 1160,
+      "classes": [],
+      "functions": [
+        "set_seed",
+        "load_agent",
+        "select_deterministic_action",
+        "calculate_relative_reward",
+        "main"
+      ],
+      "cli_flags": [],
+      "reward_weight_mentions": [
+        "                    alpha=alpha,",
+        "                    beta=beta,",
+        "                alpha=alpha,",
+        "                beta=beta,",
+        "        \"reward_alpha\": alpha,",
+        "        \"reward_beta\": beta,",
+        "        + beta * relative_delta_quantity",
+        "        alpha * relative_delta_margin",
+        "        environment.reward_config.alpha",
+        "        environment.reward_config.beta",
+        "        f\"  Alpha (margin): \"",
+        "        f\"  Beta (quantity): \"",
+        "        f\"{alpha}\"",
+        "        f\"{beta}\"",
+        "    alpha = (",
+        "    alpha: float,",
+        "    beta = (",
+        "    beta: float,"
+      ],
+      "action_space_mentions": [
+        "                f\"Expected {ACTION_DIM}, \"",
+        "                f\"found {checkpoint_action_dim}.\"",
+        "            DISCOUNT_BINS[",
+        "        \"action_dim\",",
+        "        \"action_dim\": ACTION_DIM,",
+        "        \"discount_bins\": DISCOUNT_BINS,",
+        "        0 <= action < ACTION_DIM",
+        "        action_dim=ACTION_DIM,",
+        "        if int(checkpoint_action_dim) != ACTION_DIM:",
+        "    checkpoint_action_dim = checkpoint.get(",
+        "    if checkpoint_action_dim is not None:",
+        "ACTION_DIM = 8",
+        "DISCOUNT_BINS = ["
+      ]
+    },
+    "src/environment/pricing_environment.py": {
+      "path": "src\\environment\\pricing_environment.py",
+      "exists": true,
+      "line_count": 452,
+      "classes": [
+        "ProductContext",
+        "DynamicPricingEnvironment"
+      ],
+      "functions": [],
+      "cli_flags": [],
+      "reward_weight_mentions": [
+        "                self.reward_config.name",
+        "            \"reward_config\": (",
+        "            config=self.reward_config,",
+        "        alpha/beta reward weights.",
+        "        reward_config: RewardConfig = SALES_REWARD,",
+        "        self.reward_config = reward_config",
+        "    SALES_REWARD,"
+      ],
+      "action_space_mentions": [
+        "                f\"action must be in [0, {self.ACTION_DIM - 1}], \"",
+        "                self.ACTION_DIM",
+        "            # The released dataset has observed discounts of 5\u201340%.",
+        "            DISCOUNT_BINS[action]",
+        "        Return economic outcomes for all nine candidate discounts.",
+        "        if not 0 <= action < self.ACTION_DIM:",
+        "    ACTION_DIM = len(DISCOUNT_BINS)",
+        "    DISCOUNT_BINS,"
+      ]
+    },
+    "src/environment/environment.py": {
+      "path": "src/environment/environment.py",
+      "exists": false
+    }
+  },
+  "artifacts": {
+    "models/ppo_transfer/transfer_supported_8action_policy_evaluation.csv": {
+      "exists": true,
+      "size_bytes": 9250335
+    },
+    "reports/ablation/ablation_results.csv": {
+      "exists": true,
+      "size_bytes": 1100
+    },
+    "reports/robustness/robustness_results.csv": {
+      "exists": true,
+      "size_bytes": 1141
+    },
+    "models/ppo_transfer/ppo_transfer_supported_8action_1000_updates.pth": {
+      "exists": true,
+      "size_bytes": 772011
+    }
+  },
+  "interpretation": [
+    "This is a source-capability inventory only; it does not run model inference, training, or pricing experiments.",
+    "A reward configuration being defined does not prove that evaluation under it has been run.",
+    "Do not launch training until the evaluation entry points and reward override behavior are verified."
+  ]
+}
+
+========== .\reports\base_paper_reproduction\ppo_test_summary.json ==========
+{
+  "evaluation": "deterministic held-out PPO policy evaluation",
+  "checkpoint": "models\\ppo\\ppo_batched_economic_50_updates.pth",
+  "checkpoint_updates": 500,
+  "seed": 42,
+  "state_dimension": 111,
+  "action_dimension": 9,
+  "discount_bins_percent": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40
+  ],
+  "test_months": [
+    9,
+    10
+  ],
+  "test_products": 7139,
+  "reward_definition": "alpha=0.2, beta=0.8",
+  "mean_simulated_reward": 0.3787035666170134,
+  "median_simulated_reward": 0.21381604410807292,
+  "valid_reward_count": 7139,
+  "invalid_reward_count": 0,
+  "mean_predicted_growth_percent": 37.802793443461795,
+  "mean_estimated_sales": 3303.036373341464,
+  "mean_estimated_revenue": 104628.8363882168,
+  "mean_margin_proxy": 68902.71329165927,
+  "mean_policy_entropy": 0.18605478279262705,
+  "limitations": [
+    "111-D state omits unavailable raw-review sentiment features.",
+    "Margin is a dataset-derived proxy, not verified accounting profit.",
+    "Counterfactual outcomes depend on the frozen sales predictor.",
+    "0% discount is outside the observed training-discount support.",
+    "Offline simulated results do not establish real-world causal impact."
+  ]
+}
+
+========== .\reports\base_paper_reproduction\pricing_baseline_comparison.json ==========
+{
+  "evaluation": "Offline model-based baseline comparison",
+  "test_products": 7139,
+  "reward_weights": {
+    "alpha_margin": 0.2,
+    "beta_quantity": 0.8
+  },
+  "observed_discount_note": "Uses the nearest of the nine evaluated discount actions; not necessarily the exact observed discount.",
+  "limitations": [
+    "All outcomes are simulated using the existing frozen sales predictor.",
+    "Margin is a proxy, not verified accounting profit.",
+    "These are not real-world causal effects.",
+    "Existing PPO and fixed strategies use the same test product set."
+  ],
+  "results": [
+    {
+      "strategy": "Existing PPO",
+      "test_products": 7139,
+      "mean_reward": 0.3787035666170134,
+      "median_reward": 0.2138160441080729,
+      "mean_estimated_sales": 3303.036373341464,
+      "mean_estimated_revenue": 104628.8363882168,
+      "mean_margin_proxy": 68902.71329165927,
+      "mean_discount_percent": 22.639025073539713,
+      "reward_rank": 1
+    },
+    {
+      "strategy": "Fixed 20%",
+      "test_products": 7139,
+      "mean_reward": 0.36072155147206386,
+      "median_reward": 0.1780512901754941,
+      "mean_estimated_sales": 3231.95431821178,
+      "mean_estimated_revenue": 104753.23459400774,
+      "mean_margin_proxy": 69091.51827332206,
+      "mean_discount_percent": 20.0,
+      "reward_rank": 2
+    },
+    {
+      "strategy": "Fixed 30%",
+      "test_products": 7139,
+      "mean_reward": 0.3482408168185963,
+      "median_reward": 0.1985475040011936,
+      "mean_estimated_sales": 3305.6044672833787,
+      "mean_estimated_revenue": 93977.36916673442,
+      "mean_margin_proxy": 62017.96031950846,
+      "mean_discount_percent": 30.0,
+      "reward_rank": 3
+    },
+    {
+      "strategy": "Observed discount (nearest evaluated action)",
+      "test_products": 7139,
+      "mean_reward": 0.34031126147085733,
+      "median_reward": 0.1600527572631837,
+      "mean_estimated_sales": 3221.6451208768513,
+      "mean_estimated_revenue": 98408.89147164361,
+      "mean_margin_proxy": 64903.24611344822,
+      "mean_discount_percent": 21.882616612971006,
+      "reward_rank": 4
+    },
+    {
+      "strategy": "Fixed 10%",
+      "test_products": 7139,
+      "mean_reward": 0.3337090514991501,
+      "median_reward": 0.1321664237976076,
+      "mean_estimated_sales": 3087.8790945525675,
+      "mean_estimated_revenue": 112235.14528244354,
+      "mean_margin_proxy": 73932.21785831722,
+      "mean_discount_percent": 10.0,
+      "reward_rank": 5
+    }
+  ]
+}
+
+========== .\reports\base_paper_reproduction\ppo_vs_fixed20_paired_bootstrap.json ==========
+{
+  "comparison": "Existing PPO versus fixed 20% discount",
+  "paired_test_products": 7139,
+  "mean_ppo_reward": 0.3787035666170134,
+  "mean_fixed20_reward": 0.36072155147206386,
+  "mean_paired_reward_difference": 0.017982015144949532,
+  "median_paired_reward_difference": 0.0,
+  "bootstrap_95_percent_ci": [
+    0.016437499611718774,
+    0.019494086288227856
+  ],
+  "ppo_win_share_percent": 49.83891301302704,
+  "tie_share_percent": 24.527244712144558,
+  "fixed20_win_share_percent": 25.633842274828407,
+  "bootstrap_resamples": 10000,
+  "bootstrap_seed": 42,
+  "limitations": [
+    "Paired bootstrap quantifies uncertainty across held-out products, conditional on this simulator.",
+    "It does not account for sales-predictor model error.",
+    "It does not establish real-world causal impact or statistical independence between products."
+  ]
+}
+
+========== .\reports\base_paper_reproduction\economic_robustness\economic_robustness_metadata.json ==========
+{
+  "checkpoint": "models\\ppo\\ppo_batched_economic_50_updates.pth",
+  "checkpoint_updates": 500,
+  "test_months": [
+    9,
+    10
+  ],
+  "test_products": 7139,
+  "discount_actions": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40
+  ],
+  "noise_levels": [
+    0.0,
+    0.01,
+    0.05,
+    0.1
+  ],
+  "seed": 42,
+  "reward": {
+    "alpha": 0.2,
+    "beta": 0.8
+  },
+  "baseline": "product-specific observed discount with zero predicted growth",
+  "fixed_policy": "20% discount",
+  "limitations": [
+    "Synthetic Gaussian state perturbations are not calibrated measurement errors.",
+    "Economic results are conditional on the frozen sales predictor.",
+    "Margin is a revenue-times-gross-margin-rate proxy, not verified accounting profit.",
+    "Offline simulated results do not establish real-world causal impact.",
+    "The 0% discount action is outside observed training discount support."
+  ]
+}
+
+========== .\reports\base_paper_reproduction\economic_robustness\paired_bootstrap_summary.json ==========
+{
+  "input_file": "reports\\base_paper_reproduction\\economic_robustness\\economic_robustness_by_product.csv",
+  "bootstrap_resamples": 10000,
+  "bootstrap_confidence_level": 0.95,
+  "bootstrap_method": "Percentile bootstrap over paired products",
+  "seed": 42,
+  "metrics": [
+    "simulated_reward",
+    "estimated_revenue",
+    "estimated_margin_proxy",
+    "estimated_sales"
+  ],
+  "noise_levels": [
+    0.0,
+    0.01,
+    0.05,
+    0.1
+  ],
+  "interpretation": [
+    "Confidence intervals quantify product-sampling uncertainty conditional on the existing simulator.",
+    "They do not capture sales-predictor misspecification or real-world uncertainty.",
+    "A CI excluding zero supports a nonzero mean paired difference under this evaluation setup.",
+    "Positive reward differences do not imply higher revenue or margin proxy."
+  ]
+}
+
+========== .\reports\base_paper_reproduction\state_robustness\state_robustness_metadata.json ==========
+{
+  "checkpoint": "models\\ppo\\ppo_batched_economic_50_updates.pth",
+  "checkpoint_updates": 500,
+  "state_dim": 111,
+  "action_dim": 9,
+  "discount_actions": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40
+  ],
+  "test_months": [
+    9,
+    10
+  ],
+  "test_products": 7139,
+  "noise_levels": [
+    0.0,
+    0.01,
+    0.05,
+    0.1
+  ],
+  "noise_method": "Shared seeded standard-normal perturbations, scaled by each feature's training-split standard deviation.",
+  "seed": 42,
+  "interpretation_note": "Synthetic input-sensitivity analysis, not an empirically calibrated measurement-error model. Reward retention is not estimated by this script."
+}
+
+========== CSV: .\reports\base_paper_reproduction\pricing_baseline_comparison.csv ==========
+
+strategy                                     test_products mean_reward         median_reward      mean_estimated_sales mean_estimated_revenue mean_margin_proxy mean_discount_percent reward_rank
+--------                                     ------------- -----------         -------------      -------------------- ---------------------- ----------------- --------------------- -----------
+Existing PPO                                 7139          0.3787035666170134  0.2138160441080729 3303.036373341464    104628.8363882168      68902.71329165927 22.639025073539713    1          
+Fixed 20%                                    7139          0.36072155147206386 0.1780512901754941 3231.95431821178     104753.23459400774     69091.51827332206 20.0                  2          
+Fixed 30%                                    7139          0.3482408168185963  0.1985475040011936 3305.6044672833787   93977.36916673442      62017.96031950846 30.0                  3          
+Observed discount (nearest evaluated action) 7139          0.34031126147085733 0.1600527572631837 3221.6451208768513   98408.89147164361      64903.24611344822 21.882616612971006    4          
+Fixed 10%                                    7139          0.3337090514991501  0.1321664237976076 3087.8790945525675   112235.14528244354     73932.21785831722 10.0                  5          
+
+
+
+
+========== CSV: .\reports\base_paper_reproduction\economic_robustness\economic_robustness_summary.csv ==========
+
+noise_fraction_of_train_std method   test_products mean_reward         median_reward       mean_revenue       mean_margin_proxy mean_estimated_sales valid_reward_count adverse_reward_share_percent
+--------------------------- ------   ------------- -----------         -------------       ------------       ----------------- -------------------- ------------------ ----------------------------
+0.0                         ppo      7139          0.3787035666170134  0.21381604410807292 104628.8363882168  68902.71329165927 3303.036373341464    7139               7.606107297940888           
+0.0                         fixed_20 7139          0.3607215514720639  0.1780512901754941  104753.23459400774 69091.51827332206 3231.95431821178     7139               8.208432553578932           
+0.01                        ppo      7139          0.3786685359581477  0.21373437213897706 104621.43241530821 68901.4632859673  3302.7210847064853   7139               7.480039221179437           
+0.01                        fixed_20 7139          0.3607070551530692  0.17808051554361987 104750.85830680135 69093.33412148528 3231.582707826395    7139               8.236447681748144           
+0.05                        ppo      7139          0.37904434877129783 0.21334968566894516 104602.91120243703 68902.0061439656  3302.4834315305734   7139               7.690152682448523           
+0.05                        fixed_20 7139          0.36139646142237514 0.1762670539407171  104794.21948503894 69134.82728354899 3232.0551079858456   7139               8.222440117663538           
+0.1                         ppo      7139          0.38149218995023265 0.211564622176321   104743.15778320294 69008.97333457717 3308.3559022365994   7139               7.732175374702339           
+0.1                         fixed_20 7139          0.363939008217174   0.17500298055013025 104978.513522927   69270.76259393933 3237.3426022137514   7139               8.278470374001962           
+
+
+
+
+========== CSV: .\reports\base_paper_reproduction\economic_robustness\paired_bootstrap_summary.csv ==========
+
+noise_fraction_of_train_std comparison                     metric                               paired_products mean_difference        mean_difference_ci95_low mean_difference_ci95_high median_difference  positive_difference_share_percent p
+                                                                                                                                                                                                                                               o
+                                                                                                                                                                                                                                               s
+                                                                                                                                                                                                                                               i
+                                                                                                                                                                                                                                               t
+                                                                                                                                                                                                                                               i
+                                                                                                                                                                                                                                               v
+                                                                                                                                                                                                                                               e
+                                                                                                                                                                                                                                               _
+                                                                                                                                                                                                                                               s
+                                                                                                                                                                                                                                               h
+                                                                                                                                                                                                                                               a
+                                                                                                                                                                                                                                               r
+                                                                                                                                                                                                                                               e
+                                                                                                                                                                                                                                               _
+                                                                                                                                                                                                                                               c
+                                                                                                                                                                                                                                               i
+                                                                                                                                                                                                                                               9
+                                                                                                                                                                                                                                               5
+                                                                                                                                                                                                                                               _
+                                                                                                                                                                                                                                               l
+                                                                                                                                                                                                                                               o
+                                                                                                                                                                                                                                               w
+--------------------------- ----------                     ------                               --------------- ---------------        ------------------------ ------------------------- -----------------  --------------------------------- -
+0.0                         PPO minus fixed 20%            simulated_reward                     7139            0.017982015144949532   0.016437499611718774     0.019494086288227856      0.0                49.83891301302704                 4
+0.0                         PPO minus fixed 20%            estimated_revenue                    7139            -124.3982057909403     -539.2803573785922       288.96157791760766        0.0                27.02059111920437                 2
+0.0                         PPO minus fixed 20%            estimated_margin_proxy               7139            -188.80498166279082    -455.29248181776217      87.68772395214685         0.0                26.99257599103516                 2
+0.0                         PPO minus fixed 20%            estimated_sales                      7139            71.08205512968374      64.6502209706163         77.51402625771861         0.792770192027092  53.25675864967082                 5
+0.01                        PPO minus fixed 20%            simulated_reward                     7139            0.017961480805078468   0.01643883510136198      0.019506640890786874      0.0                49.894943269365456                4
+0.01                        PPO minus fixed 20%            estimated_revenue                    7139            -129.4258914931474     -539.6749037188575       280.84338930523046        0.0                27.00658355511976                 2
+0.01                        PPO minus fixed 20%            estimated_margin_proxy               7139            -191.87083551798634    -453.1415584215735       80.03998445434227         0.0                26.978568426950556                2
+0.01                        PPO minus fixed 20%            estimated_sales                      7139            71.13837688009018      64.79038505918552        77.72585921486784         0.7672987365720019 53.07466031657094                 5
+0.05                        PPO minus fixed 20%            simulated_reward                     7139            0.017647887348922777   0.016061455355495077     0.019204699289269763      0.0                49.5167390390811                  4
+0.05                        PPO minus fixed 20%            estimated_revenue                    7139            -191.30828260191166    -603.2046436995116       224.19265405108285        0.0                26.810477657935284                2
+0.05                        PPO minus fixed 20%            estimated_margin_proxy               7139            -232.82113958339428    -499.2389836483187       32.41284597922124         0.0                26.78246252976607                 2
+0.05                        PPO minus fixed 20%            estimated_sales                      7139            70.4283235447274       63.89029700748829        77.21340736701984         0.7467337131500216 53.14469813699397                 5
+0.1                         PPO minus fixed 20%            simulated_reward                     7139            0.017553181733058643   0.01601491090386519      0.019099436970640406      0.0                49.68482980809637                 4
+0.1                         PPO minus fixed 20%            estimated_revenue                    7139            -235.35573972405592    -636.6102106189015       188.3900597984466         0.0                26.824485222019888                2
+0.1                         PPO minus fixed 20%            estimated_margin_proxy               7139            -261.78925936216       -531.2208275383091       7.0136927457780205        0.0                26.796470093850676                2
+0.1                         PPO minus fixed 20%            estimated_sales                      7139            71.01330002284811      64.58599608768652        77.58460350494863         0.6640572309494246 53.130690572909366                5
+0.01                        Perturbed PPO minus clean PPO  simulated_reward                     7139            -3.503065886575687e-05 -0.00029721509318830726  0.00023922145128211944    0.0                49.166549936965964                4
+0.01                        Perturbed PPO versus clean PPO simulated_reward_adverse_share       7139                                                                                                                                            
+0.01                        Perturbed PPO minus clean PPO  estimated_revenue                    7139            -7.403972908589409     -40.71177094141036       26.995459704640133        0.0                49.12452724471215                 4
+0.01                        Perturbed PPO versus clean PPO estimated_revenue_adverse_share      7139                                                                                                                                            
+0.01                        Perturbed PPO minus clean PPO  estimated_margin_proxy               7139            -1.2500056919712816    -24.944477333457108      23.601303177736884        0.0                49.11051968062754                 4
+0.01                        Perturbed PPO versus clean PPO estimated_margin_proxy_adverse_share 7139                                                                                                                                            
+0.01                        Perturbed PPO minus clean PPO  estimated_sales                      7139            -0.3152886349780853    -1.0676570156051377      0.4373808304165169        0.0                49.166549936965964                4
+0.01                        Perturbed PPO versus clean PPO estimated_sales_adverse_share        7139                                                                                                                                            
+0.05                        Perturbed PPO minus clean PPO  simulated_reward                     7139            0.00034078215428445845 -0.0007120061707508455   0.0013836686233326962     0.0                49.12452724471215                 4
+0.05                        Perturbed PPO versus clean PPO simulated_reward_adverse_share       7139                                                                                                                                            
+0.05                        Perturbed PPO minus clean PPO  estimated_revenue                    7139            -25.925185779773805    -172.15590082387646      127.44567811187314        0.0                49.04048186020451                 4
+0.05                        Perturbed PPO versus clean PPO estimated_revenue_adverse_share      7139                                                                                                                                            
+0.05                        Perturbed PPO minus clean PPO  estimated_margin_proxy               7139            -0.7071476936669785    -107.66967688565444      108.8698767959936         0.0                49.0264742961199                  4
+0.05                        Perturbed PPO versus clean PPO estimated_margin_proxy_adverse_share 7139                                                                                                                                            
+0.05                        Perturbed PPO minus clean PPO  estimated_sales                      7139            -0.5529418108903068    -4.142819138444588       3.022890435268081         0.0                49.13853480879675                 4
+0.05                        Perturbed PPO versus clean PPO estimated_sales_adverse_share        7139                                                                                                                                            
+0.1                         Perturbed PPO minus clean PPO  simulated_reward                     7139            0.0027886233332192023  0.0007385705848740049    0.0047704668478732925     0.0                49.22258019330438                 4
+0.1                         Perturbed PPO versus clean PPO simulated_reward_adverse_share       7139                                                                                                                                            
+0.1                         Perturbed PPO minus clean PPO  estimated_revenue                    7139            114.32139498613773     -166.1485444298851       402.22303334213376        0.0                49.09651211654293                 4
+0.1                         Perturbed PPO versus clean PPO estimated_revenue_adverse_share      7139                                                                                                                                            
+0.1                         Perturbed PPO minus clean PPO  estimated_margin_proxy               7139            106.26004291789309     -99.5304950692841        319.9739983666201         0.0                49.08250455245833                 4
+0.1                         Perturbed PPO versus clean PPO estimated_margin_proxy_adverse_share 7139                                                                                                                                            
+0.1                         Perturbed PPO minus clean PPO  estimated_sales                      7139            5.319528895136221      -2.1037711468139833      13.363701422017906        0.0                49.376663398235046                4
+0.1                         Perturbed PPO versus clean PPO estimated_sales_adverse_share        7139                                                                                                                                            
+
+
+
+
+========== CSV: .\reports\base_paper_reproduction\state_robustness\state_robustness_summary.csv ==========
+
+noise_fraction_of_train_std test_products action_flip_rate      mean_absolute_discount_change_pp median_absolute_discount_change_pp mean_total_variation_distance mean_max_action_probability mean_policy_entropy baseline_mean_discount perturb
+                                                                                                                                                                                                                                         ed_mean
+                                                                                                                                                                                                                                         _discou
+                                                                                                                                                                                                                                         nt     
+--------------------------- ------------- ----------------      -------------------------------- ---------------------------------- ----------------------------- --------------------------- ------------------- ---------------------- -------
+0.0                         7139          0.0                   0.0                              0.0                                0.0                           0.9287837147712708          0.1860547810792923  22.639025073539713     22.6...
+0.01                        7139          0.0053228743521501615 0.05322874352150161              0.0                                0.005551066715270281          0.9289296269416809          0.1858944594860077  22.639025073539713     22.6...
+0.05                        7139          0.02773497688751926   0.2773497688751926               0.0                                0.027720794081687927          0.9291825890541077          0.18539050221443176 22.639025073539713     22.6...
+0.1                         7139          0.055750105056730635  0.5603025633842275               0.0                                0.05510338395833969           0.929780125617981           0.18499113619327545 22.639025073539713     22.6...
+
+
+
+
+========== CSV: .\reports\algorithm_comparison\paper_aligned_metrics\growth_summary.csv ==========
+
+algorithm metric                  n    mean                median             std                q25                q75                 min                 max               
+--------- ------                  -    ----                ------             ---                ---                ---                 ---                 ---               
+PPO       reward                  7139 0.38478386391372565 0.2098641638755798 0.6560671193573765 0.0581990023781271 0.49408393977238574 -0.0508719613207015 15.332333217075895
+PPO       sales_growth_pct        7139 37.712192557423386  20.485630035400373 63.958874763900205 3.651223182678236  49.08883285522461   0.18359687924385404 1444.9504394531252
+PPO       margin_proxy_growth_pct 7136 41.5712286852603    25.579437424154868 75.8291026930512   6.317973583936689  53.36761933335892   -26.178930324943455 1886.364850725446 
+DDPG      reward                  7139 0.3887871081445826  0.2113423204421996 0.6641063734202919 0.0697548528194427 0.49374550951444185 -0.070432142458464  15.751972743443083
+DDPG      sales_growth_pct        7139 37.7660578098229    21.45702743530272  64.1487813298811   2.5792211294174106 50.06775665283203   0.18891595304011077 1463.5174560546875
+DDPG      margin_proxy_growth_pct 7136 43.36199603561287   26.969938111305215 81.39190850349273  8.473403706270116  54.36620182461205   -36.62037334944074  2021.91654750279  
+SAC       reward                  7139 0.3887669110349953  0.2198741753896078 0.6627632973965121 0.059673919575555  0.5054232489267985  -0.0604708942394508 15.751972743443083
+SAC       sales_growth_pct        7139 38.66929001098864   22.54335021972654  64.17587425394304  3.983041524887083  51.221584320068374  0.18370293080805067 1463.5174560546875
+SAC       margin_proxy_growth_pct 7136 39.73450429754257   23.41284280664778  79.26893007332029  5.033784866332984  50.42355420866184   -31.382705759061015 2021.91654750279  
+DDQN      reward                  7139 0.37922252052770594 0.1987120819091797 0.6526725242449537 0.056673265437285  0.4837393714359829  -0.0708921019905492 15.751972743443083
+DDQN      sales_growth_pct        7139 37.02764404183644   20.162395477294933 63.69121996911171  3.154944896697993  48.28217697143555   0.18325661122801626 1463.5174560546875
+DDQN      margin_proxy_growth_pct 7136 41.531356022041216  25.612766639391573 75.62959090959617  6.363701083642589  53.98008134731882   -36.65173422662835  2021.91654750279  
+
+
+

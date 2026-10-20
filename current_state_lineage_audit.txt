@@ -1,0 +1,649 @@
+﻿
+  scripts\extract_features.py:4:import numpy as np
+  scripts\extract_features.py:5:from sentence_transformers import SentenceTransformer
+> scripts\extract_features.py:6:from sklearn.preprocessing import StandardScaler, OneHotEncoder
+  scripts\extract_features.py:7:from sklearn.compose import ColumnTransformer
+> scripts\extract_features.py:8:from sklearn.impute import SimpleImputer
+  scripts\extract_features.py:9:from sklearn.pipeline import Pipeline
+  scripts\extract_features.py:10:import yaml
+  scripts\extract_features.py:11:
+  scripts\extract_features.py:20:
+  scripts\extract_features.py:21:def extract_attributes(df):
+> scripts\extract_features.py:22:    numeric_cols = [
+> scripts\extract_features.py:23:        'MonthNum', 'Total Rating Count', 'New Rating Count', 'Total Review Count',
+  scripts\extract_features.py:24:        'New Review Count', 'Rating Score', 'Positive Rating Rate', 'Negative Rating Rate',
+> scripts\extract_features.py:25:        'Buybox Price (USD)', 'Weight (pounds)', 'Volume (cubic inches)', 'Number of Variants',
+> scripts\extract_features.py:26:        'Number of Sellers', 'FBA Shipping Fee (USD)', 'Gross Margin Rate',
+  scripts\extract_features.py:27:        'Main Category BSR Ranking', 'Main Category BSR Change Number', 'Main Category BSR Change Rate'
+  scripts\extract_features.py:28:    ]
+  scripts\extract_features.py:29:    
+> scripts\extract_features.py:30:    categorical_cols = [
+  scripts\extract_features.py:31:        'Main Category BSR Category', 'Buybox Seller Type'
+  scripts\extract_features.py:32:    ]
+  scripts\extract_features.py:33:    
+  scripts\extract_features.py:34:    # Pre-clean the numeric string columns that might not be parsed fully
+> scripts\extract_features.py:35:    for col in numeric_cols:
+  scripts\extract_features.py:36:        if col in df.columns:
+  scripts\extract_features.py:37:            df[col] = pd.to_numeric(df[col].apply(clean_numeric_str), errors='coerce')
+  scripts\extract_features.py:38:            
+  scripts\extract_features.py:39:    # Imputers and Scalers
+  scripts\extract_features.py:40:    numeric_transformer = Pipeline(steps=[
+> scripts\extract_features.py:41:        ('imputer', SimpleImputer(strategy='mean')),
+> scripts\extract_features.py:42:        ('scaler', StandardScaler())
+  scripts\extract_features.py:43:    ])
+  scripts\extract_features.py:44:    
+  scripts\extract_features.py:45:    categorical_transformer = Pipeline(steps=[
+> scripts\extract_features.py:46:        ('imputer', SimpleImputer(strategy='most_frequent')),
+> scripts\extract_features.py:47:        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+  scripts\extract_features.py:48:    ])
+  scripts\extract_features.py:49:    
+  scripts\extract_features.py:50:    preprocessor = ColumnTransformer(
+  scripts\extract_features.py:51:        transformers=[
+> scripts\extract_features.py:52:            ('num', numeric_transformer, numeric_cols),
+> scripts\extract_features.py:53:            ('cat', categorical_transformer, categorical_cols)
+  scripts\extract_features.py:54:        ])
+  scripts\extract_features.py:55:    
+  scripts\extract_features.py:56:    # Fit and transform
+> scripts\extract_features.py:57:    attributes_array = preprocessor.fit_transform(df)
+  scripts\extract_features.py:58:    
+  scripts\extract_features.py:59:    # Check shape
+  scripts\extract_features.py:60:    current_dim = attributes_array.shape[1]
+  scripts\extract_features.py:115:    index_df = df[['ASIN']].copy()
+  scripts\extract_features.py:116:    index_df = index_df.reset_index(drop=True)
+> scripts\extract_features.py:117:    index_df.to_parquet("data/processed/features/feature_index.parquet")
+  scripts\extract_features.py:118:    print("Saved feature index")
+  scripts\extract_features.py:119:
+  scripts\extract_features.py:120:if __name__ == "__main__":
+  scripts\extract_attributes_train_only.py:6:import yaml
+  scripts\extract_attributes_train_only.py:7:from sklearn.compose import ColumnTransformer
+> scripts\extract_attributes_train_only.py:8:from sklearn.impute import SimpleImputer
+  scripts\extract_attributes_train_only.py:9:from sklearn.pipeline import Pipeline
+> scripts\extract_attributes_train_only.py:10:from sklearn.preprocessing import OneHotEncoder, StandardScaler
+  scripts\extract_attributes_train_only.py:11:
+  scripts\extract_attributes_train_only.py:12:ROOT = Path(".")
+  scripts\extract_attributes_train_only.py:13:DATA_PATH = ROOT / "data/processed/products_clean.parquet"
+  scripts\extract_attributes_train_only.py:15:OUTPUT_DIR = ROOT / "data/processed/features_train_only"
+  scripts\extract_attributes_train_only.py:16:OUTPUT_PATH = OUTPUT_DIR / "attribute_features_train_only.npy"
+> scripts\extract_attributes_train_only.py:17:INDEX_PATH = OUTPUT_DIR / "feature_index.parquet"
+  scripts\extract_attributes_train_only.py:18:REPORT_PATH = OUTPUT_DIR / "attribute_preprocessing_report.json"
+  scripts\extract_attributes_train_only.py:19:
+> scripts\extract_attributes_train_only.py:20:NUMERIC_COLS = [
+> scripts\extract_attributes_train_only.py:21:    "MonthNum", "Total Rating Count", "New Rating Count",
+  scripts\extract_attributes_train_only.py:22:    "Total Review Count", "New Review Count", "Rating Score",
+  scripts\extract_attributes_train_only.py:23:    "Positive Rating Rate", "Negative Rating Rate",
+> scripts\extract_attributes_train_only.py:24:    "Buybox Price (USD)", "Weight (pounds)",
+  scripts\extract_attributes_train_only.py:25:    "Volume (cubic inches)", "Number of Variants",
+  scripts\extract_attributes_train_only.py:26:    "Number of Sellers", "FBA Shipping Fee (USD)",
+> scripts\extract_attributes_train_only.py:27:    "Gross Margin Rate", "Main Category BSR Ranking",
+  scripts\extract_attributes_train_only.py:28:    "Main Category BSR Change Number", "Main Category BSR Change Rate",
+  scripts\extract_attributes_train_only.py:29:]
+> scripts\extract_attributes_train_only.py:30:CATEGORICAL_COLS = ["Main Category BSR Category", "Buybox Seller Type"]
+  scripts\extract_attributes_train_only.py:31:EXPECTED_DIM = 47
+  scripts\extract_attributes_train_only.py:32:
+  scripts\extract_attributes_train_only.py:33:
+  scripts\extract_attributes_train_only.py:37:        split = yaml.safe_load(f)["split"]
+  scripts\extract_attributes_train_only.py:38:
+> scripts\extract_attributes_train_only.py:39:    train_mask = df["MonthNum"].isin(split["train_months"]).to_numpy()
+> scripts\extract_attributes_train_only.py:40:    if not train_mask.any():
+  scripts\extract_attributes_train_only.py:41:        raise ValueError("No training rows found from configured months.")
+  scripts\extract_attributes_train_only.py:42:
+  scripts\extract_attributes_train_only.py:43:    missing = [
+> scripts\extract_attributes_train_only.py:44:        c for c in NUMERIC_COLS + CATEGORICAL_COLS
+  scripts\extract_attributes_train_only.py:45:        if c not in df.columns
+  scripts\extract_attributes_train_only.py:46:    ]
+  scripts\extract_attributes_train_only.py:47:    if missing:
+  scripts\extract_attributes_train_only.py:48:        raise ValueError(f"Missing required columns: {missing}")
+  scripts\extract_attributes_train_only.py:49:
+> scripts\extract_attributes_train_only.py:50:    work = df[NUMERIC_COLS + CATEGORICAL_COLS].copy()
+> scripts\extract_attributes_train_only.py:51:    for col in NUMERIC_COLS:
+  scripts\extract_attributes_train_only.py:52:        work[col] = pd.to_numeric(
+  scripts\extract_attributes_train_only.py:53:            work[col].astype(str).str.replace(",", "", regex=False)
+  scripts\extract_attributes_train_only.py:54:            .str.replace("%", "", regex=False).str.strip(),
+  scripts\extract_attributes_train_only.py:58:
+  scripts\extract_attributes_train_only.py:59:    numeric_pipeline = Pipeline([
+> scripts\extract_attributes_train_only.py:60:        ("imputer", SimpleImputer(strategy="mean")),
+> scripts\extract_attributes_train_only.py:61:        ("scaler", StandardScaler()),
+  scripts\extract_attributes_train_only.py:62:    ])
+  scripts\extract_attributes_train_only.py:63:    categorical_pipeline = Pipeline([
+> scripts\extract_attributes_train_only.py:64:        ("imputer", SimpleImputer(strategy="most_frequent")),
+> scripts\extract_attributes_train_only.py:65:        ("onehot", OneHotEncoder(
+  scripts\extract_attributes_train_only.py:66:            handle_unknown="ignore",
+  scripts\extract_attributes_train_only.py:67:            sparse_output=False,
+  scripts\extract_attributes_train_only.py:68:        )),
+  scripts\extract_attributes_train_only.py:69:    ])
+  scripts\extract_attributes_train_only.py:70:    preprocessor = ColumnTransformer([
+> scripts\extract_attributes_train_only.py:71:        ("num", numeric_pipeline, NUMERIC_COLS),
+> scripts\extract_attributes_train_only.py:72:        ("cat", categorical_pipeline, CATEGORICAL_COLS),
+  scripts\extract_attributes_train_only.py:73:    ])
+  scripts\extract_attributes_train_only.py:74:
+  scripts\extract_attributes_train_only.py:75:    # Fit only on training months; transform every row with that fitted pipeline.
+> scripts\extract_attributes_train_only.py:76:    preprocessor.fit(work.loc[train_mask])
+> scripts\extract_attributes_train_only.py:77:    features = preprocessor.transform(work).astype(np.float32)
+  scripts\extract_attributes_train_only.py:78:
+  scripts\extract_attributes_train_only.py:79:    if features.shape[1] != EXPECTED_DIM:
+  scripts\extract_attributes_train_only.py:80:        raise ValueError(
+  scripts\extract_attributes_train_only.py:92:    report = {
+  scripts\extract_attributes_train_only.py:93:        "rows": int(len(df)),
+> scripts\extract_attributes_train_only.py:94:        "training_rows": int(train_mask.sum()),
+  scripts\extract_attributes_train_only.py:95:        "training_months": split["train_months"],
+  scripts\extract_attributes_train_only.py:96:        "validation_months": split["val_months"],
+  scripts\extract_attributes_train_only.py:97:        "test_months": split["test_months"],
+  scripts\build_state.py:39:from src.models.itanet import (
+  scripts\build_state.py:40:    ItaNetStateBuilder,
+> scripts\build_state.py:41:    PAPER_STATE_DIM,
+> scripts\build_state.py:42:    AVAILABLE_STATE_DIM,
+  scripts\build_state.py:43:)
+  scripts\build_state.py:44:
+  scripts\build_state.py:45:
+  scripts\build_state.py:55:IMAGE_PATH = os.path.join(FEATURE_DIR, "image_features.npy")
+  scripts\build_state.py:56:
+> scripts\build_state.py:57:INDEX_PATH = os.path.join(FEATURE_DIR, "feature_index.parquet")
+  scripts\build_state.py:58:CLEAN_DATA_PATH = "data/processed/products_clean.parquet"
+  scripts\build_state.py:59:
+  scripts\build_state.py:60:
+  scripts\build_state.py:154:    print(f"\nComplete state shape: {state_valid.shape}")
+  scripts\build_state.py:155:
+> scripts\build_state.py:156:    if state_valid.shape[1] != AVAILABLE_STATE_DIM:
+  scripts\build_state.py:157:        raise ValueError(
+> scripts\build_state.py:158:            f"Expected {AVAILABLE_STATE_DIM}-D state, "
+  scripts\build_state.py:159:            f"got {state_valid.shape[1]}-D"
+  scripts\build_state.py:160:        )
+  scripts\build_state.py:161:
+  scripts\build_state.py:165:
+  scripts\build_state.py:166:    np.save(
+> scripts\build_state.py:167:        os.path.join(STATE_DIR, "state.npy"),
+  scripts\build_state.py:168:        state_valid,
+  scripts\build_state.py:169:    )
+  scripts\build_state.py:170:
+  scripts\build_state.py:171:    print(
+> scripts\build_state.py:172:        f"Saved: {os.path.join(STATE_DIR, 'state.npy')}"
+  scripts\build_state.py:173:    )
+  scripts\build_state.py:174:
+  scripts\build_state.py:175:    # Preserve source row identity.
+  scripts\build_state.py:177:
+  scripts\build_state.py:178:    np.save(
+> scripts\build_state.py:179:        os.path.join(STATE_DIR, "state_row_indices.npy"),
+  scripts\build_state.py:180:        valid_row_indices,
+  scripts\build_state.py:181:    )
+  scripts\build_state.py:182:
+  scripts\build_state.py:183:    print(
+> scripts\build_state.py:184:        f"Saved: {os.path.join(STATE_DIR, 'state_row_indices.npy')}"
+  scripts\build_state.py:185:    )
+  scripts\build_state.py:186:
+  scripts\build_state.py:187:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:216:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:217:
+> scripts\build_state.py:218:    train_mask_all = df_clean["MonthNum"].isin(
+  scripts\build_state.py:219:        [1, 2, 3, 4, 5, 6]
+  scripts\build_state.py:220:    ).values
+  scripts\build_state.py:221:
+> scripts\build_state.py:222:    val_mask_all = df_clean["MonthNum"].isin(
+  scripts\build_state.py:223:        [7, 8]
+  scripts\build_state.py:224:    ).values
+  scripts\build_state.py:225:
+> scripts\build_state.py:226:    test_mask_all = df_clean["MonthNum"].isin(
+  scripts\build_state.py:227:        [9, 10]
+  scripts\build_state.py:228:    ).values
+  scripts\build_state.py:229:
+  scripts\build_state.py:230:    # Combine chronological split with complete-state validity.
+> scripts\build_state.py:231:    train_mask = train_mask_all & image_valid_mask
+  scripts\build_state.py:232:    val_mask = val_mask_all & image_valid_mask
+  scripts\build_state.py:233:    test_mask = test_mask_all & image_valid_mask
+  scripts\build_state.py:234:
+  scripts\build_state.py:237:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:238:
+> scripts\build_state.py:239:    state_train_mask = train_mask[image_valid_mask]
+  scripts\build_state.py:240:    state_val_mask = val_mask[image_valid_mask]
+  scripts\build_state.py:241:    state_test_mask = test_mask[image_valid_mask]
+  scripts\build_state.py:242:
+> scripts\build_state.py:243:    state_train = state_valid[state_train_mask]
+  scripts\build_state.py:244:    state_val = state_valid[state_val_mask]
+  scripts\build_state.py:245:    state_test = state_valid[state_test_mask]
+  scripts\build_state.py:246:
+  scripts\build_state.py:282:            "split": np.select(
+  scripts\build_state.py:283:                [
+> scripts\build_state.py:284:                    train_mask_all,
+  scripts\build_state.py:285:                    val_mask_all,
+  scripts\build_state.py:286:                    test_mask_all,
+  scripts\build_state.py:287:                ],
+  scripts\build_state.py:313:
+  scripts\build_state.py:314:    train_months = df_clean.loc[
+> scripts\build_state.py:315:        train_mask_all,
+> scripts\build_state.py:316:        "MonthNum"
+  scripts\build_state.py:317:    ].unique()
+  scripts\build_state.py:318:
+  scripts\build_state.py:319:    val_months = df_clean.loc[
+  scripts\build_state.py:320:        val_mask_all,
+> scripts\build_state.py:321:        "MonthNum"
+  scripts\build_state.py:322:    ].unique()
+  scripts\build_state.py:323:
+  scripts\build_state.py:324:    test_months = df_clean.loc[
+  scripts\build_state.py:325:        test_mask_all,
+> scripts\build_state.py:326:        "MonthNum"
+  scripts\build_state.py:327:    ].unique()
+  scripts\build_state.py:328:
+  scripts\build_state.py:329:    if not (max(train_months) < min(val_months)):
+  scripts\build_state.py:363:        "num_incomplete_samples": int(invalid_count),
+  scripts\build_state.py:364:
+> scripts\build_state.py:365:        "state_dimension": int(state_valid.shape[1]),
+> scripts\build_state.py:366:        "paper_state_dimension": int(PAPER_STATE_DIM),
+> scripts\build_state.py:367:        "available_state_dimension": int(AVAILABLE_STATE_DIM),
+  scripts\build_state.py:368:        "missing_dimensions": int(
+> scripts\build_state.py:369:            PAPER_STATE_DIM - state_valid.shape[1]
+  scripts\build_state.py:370:        ),
+  scripts\build_state.py:371:
+  scripts\build_state.py:372:        "modalities_included": [
+  scripts\build_state.py:391:
+  scripts\build_state.py:392:        "train_samples_source": int(
+> scripts\build_state.py:393:            train_mask_all.sum()
+  scripts\build_state.py:394:        ),
+  scripts\build_state.py:395:        "val_samples_source": int(
+  scripts\build_state.py:396:            val_mask_all.sum()
+  scripts\build_state_train_only.py:20:IMAGE_PATH = FEATURE_DIR / "image_features.npy"
+  scripts\build_state_train_only.py:21:ATTRIBUTE_PATH = CORRECTED_DIR / "attribute_features_train_only.npy"
+> scripts\build_state_train_only.py:22:INDEX_PATH = CORRECTED_DIR / "feature_index.parquet"
+  scripts\build_state_train_only.py:23:DATA_PATH = Path("data/processed/products_clean.parquet")
+  scripts\build_state_train_only.py:24:SPLIT_PATH = Path("configs/data_split.yaml")
+  scripts\build_state_train_only.py:25:
+  scripts\build_state_train_only.py:83:        raise ValueError("Constructed state contains NaN or Inf.")
+  scripts\build_state_train_only.py:84:
+> scripts\build_state_train_only.py:85:    months = df["MonthNum"].to_numpy()
+  scripts\build_state_train_only.py:86:    train_months = split["train_months"]
+  scripts\build_state_train_only.py:87:    val_months = split["val_months"]
+  scripts\build_state_train_only.py:88:    test_months = split["test_months"]
+  scripts\build_state_train_only.py:89:
+  scripts\build_state_train_only.py:90:    state_months = months[valid_indices]
+> scripts\build_state_train_only.py:91:    train_mask = np.isin(state_months, train_months)
+  scripts\build_state_train_only.py:92:    val_mask = np.isin(state_months, val_months)
+  scripts\build_state_train_only.py:93:    test_mask = np.isin(state_months, test_months)
+  scripts\build_state_train_only.py:94:
+> scripts\build_state_train_only.py:95:    if np.any(train_mask & val_mask) or np.any(train_mask & test_mask):
+  scripts\build_state_train_only.py:96:        raise ValueError("Overlapping chronological splits.")
+  scripts\build_state_train_only.py:97:    if np.any(val_mask & test_mask):
+  scripts\build_state_train_only.py:98:        raise ValueError("Validation and test splits overlap.")
+  scripts\build_state_train_only.py:101:    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+  scripts\build_state_train_only.py:102:
+> scripts\build_state_train_only.py:103:    np.save(OUTPUT_DIR / "state.npy", state)
+> scripts\build_state_train_only.py:104:    np.save(OUTPUT_DIR / "state_row_indices.npy", valid_indices)
+> scripts\build_state_train_only.py:105:    np.save(OUTPUT_DIR / "state_train.npy", state[train_mask])
+  scripts\build_state_train_only.py:106:    np.save(OUTPUT_DIR / "state_val.npy", state[val_mask])
+  scripts\build_state_train_only.py:107:    np.save(OUTPUT_DIR / "state_test.npy", state[test_mask])
+  scripts\build_state_train_only.py:108:
+  scripts\build_state_train_only.py:125:    report = {
+  scripts\build_state_train_only.py:126:        "variant": "train-only attribute preprocessing",
+> scripts\build_state_train_only.py:127:        "state_dimension": int(state.shape[1]),
+> scripts\build_state_train_only.py:128:        "paper_state_dimension": 121,
+  scripts\build_state_train_only.py:129:        "missing_modality": "10-D review sentiment",
+  scripts\build_state_train_only.py:130:        "source_rows": int(n),
+  scripts\build_state_train_only.py:131:        "valid_image_rows": int(image_valid.sum()),
+  scripts\build_state_train_only.py:134:        "validation_months": val_months,
+  scripts\build_state_train_only.py:135:        "test_months": test_months,
+> scripts\build_state_train_only.py:136:        "train_state_rows": int(train_mask.sum()),
+  scripts\build_state_train_only.py:137:        "validation_state_rows": int(val_mask.sum()),
+  scripts\build_state_train_only.py:138:        "test_state_rows": int(test_mask.sum()),
+  scripts\build_state_train_only.py:139:        "state_finite": bool(np.isfinite(state).all()),
+  src\models\itanet.py:56:# Full state defined by the paper:
+  src\models\itanet.py:57:# 32 + 32 + 10 + 47 = 121
+> src\models\itanet.py:58:PAPER_STATE_DIM = (
+  src\models\itanet.py:59:    IMAGE_DIM
+  src\models\itanet.py:60:    + TEXT_DIM
+  src\models\itanet.py:61:    + SENTIMENT_DIM
+  src\models\itanet.py:68:# Sentiment is omitted because the required review text/database
+  src\models\itanet.py:69:# is not available in the released dataset.
+> src\models\itanet.py:70:AVAILABLE_STATE_DIM = (
+  src\models\itanet.py:71:    IMAGE_DIM
+  src\models\itanet.py:72:    + TEXT_DIM
+  src\models\itanet.py:73:    + ATTRIBUTE_DIM
+  src\models\itanet.py:245:
+  src\models\itanet.py:246:    @property
+> src\models\itanet.py:247:    def state_dim(self) -> int:
+  src\models\itanet.py:248:        """Return the state dimension for the supplied modalities."""
+  src\models\itanet.py:249:
+  src\models\itanet.py:250:        dim = 0
+  src\models\itanet.py:275:            "sentiment": self.sentiment_features is not None,
+  src\models\itanet.py:276:            "attributes": self.attribute_features is not None,
+> src\models\itanet.py:277:            "state_dim": self.state_dim,
+> src\models\itanet.py:278:            "paper_state_dim": PAPER_STATE_DIM,
+> src\models\itanet.py:279:            "available_state_dim": AVAILABLE_STATE_DIM,
+> src\models\itanet.py:280:            "missing_dims": PAPER_STATE_DIM - self.state_dim,
+  src\models\itanet.py:281:        }
+  src\environment\ppo_dataset.py:18:
+  src\environment\ppo_dataset.py:19:def load_ppo_dataset(
+> src\environment\ppo_dataset.py:20:    state_path: str | Path = "data/processed/state/state.npy",
+> src\environment\ppo_dataset.py:21:    index_path: str | Path = "data/processed/state/state_row_indices.npy",
+  src\environment\ppo_dataset.py:22:    products_path: str | Path = "data/processed/products_clean.parquet",
+  src\environment\ppo_dataset.py:23:) -> PPODataset:
+  src\environment\ppo_dataset.py:24:    """
+  src\environment\ppo_dataset.py:25:    Load states and align them with product-level economic metadata.
+  src\environment\ppo_dataset.py:26:
+> src\environment\ppo_dataset.py:27:    Only rows with a valid Gross Margin Rate are retained because the
+  src\environment\ppo_dataset.py:28:    paper-style reward requires delta_margin.
+  src\environment\ppo_dataset.py:29:    """
+  src\environment\ppo_dataset.py:30:
+> src\environment\ppo_dataset.py:31:    states = np.load(state_path)
+> src\environment\ppo_dataset.py:32:    source_indices = np.load(index_path)
+  src\environment\ppo_dataset.py:33:
+  src\environment\ppo_dataset.py:34:    df = pd.read_parquet(products_path)
+  src\environment\ppo_dataset.py:35:
+> src\environment\ppo_dataset.py:36:    if len(states) != len(source_indices):
+  src\environment\ppo_dataset.py:37:        raise ValueError(
+  src\environment\ppo_dataset.py:38:            "State matrix and state-row-index array have different lengths."
+  src\environment\ppo_dataset.py:39:        )
+  src\environment\ppo_dataset.py:47:        raise ValueError("State matrix contains NaN or Inf.")
+  src\environment\ppo_dataset.py:48:
+> src\environment\ppo_dataset.py:49:    if np.any(source_indices < 0) or np.any(source_indices >= len(df)):
+  src\environment\ppo_dataset.py:50:        raise ValueError("State row indices contain invalid dataset rows.")
+  src\environment\ppo_dataset.py:51:
+> src\environment\ppo_dataset.py:52:    aligned = df.iloc[source_indices].copy()
+  src\environment\ppo_dataset.py:53:    aligned["_state_position"] = np.arange(len(aligned))
+  src\environment\ppo_dataset.py:54:
+  src\environment\ppo_dataset.py:55:    required_columns = [
+> src\environment\ppo_dataset.py:56:        "Buybox Price (USD)",
+  src\environment\ppo_dataset.py:57:        "Discount",
+  src\environment\ppo_dataset.py:58:        "Last Monthly Sales",
+> src\environment\ppo_dataset.py:59:        "Gross Margin Rate",
+  src\environment\ppo_dataset.py:60:    ]
+  src\environment\ppo_dataset.py:61:
+  src\environment\ppo_dataset.py:62:    missing_columns = [
+  src\environment\ppo_dataset.py:71:
+  src\environment\ppo_dataset.py:72:    # Paper-style reward requires margin.
+> src\environment\ppo_dataset.py:73:    valid_margin = aligned["Gross Margin Rate"].notna()
+  src\environment\ppo_dataset.py:74:
+  src\environment\ppo_dataset.py:75:    aligned = aligned.loc[valid_margin].copy()
+  src\environment\ppo_dataset.py:76:
+  src\environment\ppo_dataset.py:91:        products.append(
+  src\environment\ppo_dataset.py:92:            ProductContext(
+> src\environment\ppo_dataset.py:93:                observed_price=float(row["Buybox Price (USD)"]),
+  src\environment\ppo_dataset.py:94:                observed_discount=float(row["Discount"]),
+  src\environment\ppo_dataset.py:95:                last_monthly_sales=float(row["Last Monthly Sales"]),
+> src\environment\ppo_dataset.py:96:                gross_margin_rate=float(row["Gross Margin Rate"]),
+  src\environment\ppo_dataset.py:97:            )
+  src\environment\ppo_dataset.py:98:        )
+  src\environment\ppo_dataset.py:99:
+  src\environment\ppo_dataset.py:101:        states=filtered_states.astype(np.float32),
+  src\environment\ppo_dataset.py:102:        products=products,
+> src\environment\ppo_dataset.py:103:        source_row_indices=source_indices[retained_positions],
+  src\environment\ppo_dataset.py:104:    )
+  src\environment\pricing_environment.py:14:    RewardConfig,
+  src\environment\pricing_environment.py:15:    SALES_REWARD,
+> src\environment\pricing_environment.py:16:    calculate_reward,
+  src\environment\pricing_environment.py:17:)
+  src\environment\pricing_environment.py:18:
+  src\environment\pricing_environment.py:19:
+  src\environment\pricing_environment.py:70:    """
+  src\environment\pricing_environment.py:71:
+> src\environment\pricing_environment.py:72:    STATE_DIM = 111
+  src\environment\pricing_environment.py:73:    ACTION_DIM = len(DISCOUNT_BINS)
+  src\environment\pricing_environment.py:74:
+  src\environment\pricing_environment.py:75:    def __init__(
+  src\environment\pricing_environment.py:110:        )
+  src\environment\pricing_environment.py:111:
+> src\environment\pricing_environment.py:112:        if state.shape != (self.STATE_DIM,):
+  src\environment\pricing_environment.py:113:            raise ValueError(
+> src\environment\pricing_environment.py:114:                f"state must have shape ({self.STATE_DIM},), "
+  src\environment\pricing_environment.py:115:                f"got {state.shape}"
+  src\environment\pricing_environment.py:116:            )
+  src\environment\pricing_environment.py:117:
+  src\environment\pricing_environment.py:262:            next_state,
+  src\environment\pricing_environment.py:263:            reward,
+> src\environment\pricing_environment.py:264:            terminated,
+  src\environment\pricing_environment.py:265:            info
+  src\environment\pricing_environment.py:266:        """
+  src\environment\pricing_environment.py:267:
+  src\environment\pricing_environment.py:280:        ):
+  src\environment\pricing_environment.py:281:            raise ValueError(
+> src\environment\pricing_environment.py:282:                "Gross Margin Rate is required for the configured "
+  src\environment\pricing_environment.py:283:                "paper reward because delta_margin cannot be computed."
+  src\environment\pricing_environment.py:284:            )
+  src\environment\pricing_environment.py:285:
+  src\environment\pricing_environment.py:333:        # Paper-style weighted reward
+  src\environment\pricing_environment.py:334:        # -------------------------------------------------------------
+> src\environment\pricing_environment.py:335:        reward = calculate_reward(
+  src\environment\pricing_environment.py:336:            delta_margin=relative_delta_margin,
+  src\environment\pricing_environment.py:337:            delta_quantity=relative_delta_quantity,
+  src\environment\pricing_environment.py:338:            config=self.reward_config,
+  src\environment\pricing_environment.py:443:        # Current environment is a one-step counterfactual decision.
+  src\environment\pricing_environment.py:444:        # -------------------------------------------------------------
+> src\environment\pricing_environment.py:445:        terminated = True
+  src\environment\pricing_environment.py:446:
+  src\environment\pricing_environment.py:447:        return (
+  src\environment\pricing_environment.py:448:            self.state.copy(),
+  src\environment\pricing_environment.py:449:            float(reward),
+> src\environment\pricing_environment.py:450:            terminated,
+  src\environment\pricing_environment.py:451:            info,
+  src\environment\pricing_environment.py:452:        )
+  src\environment\pricing_economics.py:66:        _validate_finite(
+  src\environment\pricing_economics.py:67:            gross_margin_rate,
+> src\environment\pricing_economics.py:68:            "Gross margin rate",
+  src\environment\pricing_economics.py:69:        )
+  src\environment\pricing_economics.py:70:
+  src\environment\pricing_economics.py:71:
+  scripts\train_ppo.py:36:# training support.
+  scripts\train_ppo.py:37:# ---------------------------------------------------------------------
+> scripts\train_ppo.py:38:DISCOUNT_ACTIONS = np.array(
+  scripts\train_ppo.py:39:    [5, 10, 15, 20, 25, 30, 35, 40],
+  scripts\train_ppo.py:40:    dtype=np.int64,
+  scripts\train_ppo.py:41:)
+  scripts\train_ppo.py:42:
+> scripts\train_ppo.py:43:ACTION_DIM = len(DISCOUNT_ACTIONS)
+  scripts\train_ppo.py:44:
+  scripts\train_ppo.py:45:
+  scripts\train_ppo.py:46:# ---------------------------------------------------------------------
+  scripts\train_ppo.py:110:    print(
+  scripts\train_ppo.py:111:        "  "
+> scripts\train_ppo.py:112:        + ", ".join(f"{discount}%" for discount in DISCOUNT_ACTIONS)
+  scripts\train_ppo.py:113:    )
+  scripts\train_ppo.py:114:    print(f"Action dimension: {ACTION_DIM}")
+  scripts\train_ppo.py:115:    print()
+  scripts\train_ppo.py:131:    ].copy()
+  scripts\train_ppo.py:132:
+> scripts\train_ppo.py:133:    train_mask = aligned["MonthNum"].between(1, 6)
+  scripts\train_ppo.py:134:
+  scripts\train_ppo.py:135:    train_positions = np.flatnonzero(
+> scripts\train_ppo.py:136:        train_mask.to_numpy()
+  scripts\train_ppo.py:137:    )
+  scripts\train_ppo.py:138:
+  scripts\train_ppo.py:139:    if len(train_positions) == 0:
+  scripts\train_ppo.py:173:    # -----------------------------------------------------------------
+  scripts\train_ppo.py:174:    agent = PPOAgent(
+> scripts\train_ppo.py:175:        state_dim=111,
+  scripts\train_ppo.py:176:        action_dim=ACTION_DIM,
+  scripts\train_ppo.py:177:        actor_lr=8e-4,
+  scripts\train_ppo.py:178:        critic_lr=8e-4,
+  scripts\train_ppo.py:246:    )
+  scripts\train_ppo.py:247:
+> scripts\train_ppo.py:248:    checkpoint_path = (
+  scripts\train_ppo.py:249:        output_dir
+  scripts\train_ppo.py:250:        / "ppo_batched_supported_8action_500_updates.pth"
+  scripts\train_ppo.py:251:    )
+  scripts\train_ppo.py:343:            # Economic environment
+  scripts\train_ppo.py:344:            # ---------------------------------------------------------
+> scripts\train_ppo.py:345:            _, reward, terminated, info = (
+  scripts\train_ppo.py:346:                environment.step(environment_action)
+  scripts\train_ppo.py:347:            )
+  scripts\train_ppo.py:348:
+  scripts\train_ppo.py:358:                log_probability=log_probability,
+  scripts\train_ppo.py:359:                value=value,
+> scripts\train_ppo.py:360:                done=terminated,
+  scripts\train_ppo.py:361:            )
+  scripts\train_ppo.py:362:
+  scripts\train_ppo.py:363:            update_rewards.append(
+  scripts\train_ppo.py:451:        # Store action counts using actual discount names.
+  scripts\train_ppo.py:452:        for action_index, discount in enumerate(
+> scripts\train_ppo.py:453:            DISCOUNT_ACTIONS
+  scripts\train_ppo.py:454:        ):
+  scripts\train_ppo.py:455:            row[
+  scripts\train_ppo.py:456:                f"action_{int(discount)}"
+  scripts\train_ppo.py:465:        # -------------------------------------------------------------
+  scripts\train_ppo.py:466:        action_text = ", ".join(
+> scripts\train_ppo.py:467:            f"{int(DISCOUNT_ACTIONS[i])}%={action_counts[i]}"
+  scripts\train_ppo.py:468:            for i in range(ACTION_DIM)
+  scripts\train_ppo.py:469:            if action_counts[i] > 0
+  scripts\train_ppo.py:470:        )
+  scripts\train_ppo.py:502:
+  scripts\train_ppo.py:503:    # -----------------------------------------------------------------
+> scripts\train_ppo.py:504:    # 8. Save checkpoint
+  scripts\train_ppo.py:505:    # -----------------------------------------------------------------
+  scripts\train_ppo.py:506:    torch.save(
+  scripts\train_ppo.py:507:        {
+  scripts\train_ppo.py:526:                args.updates * args.batch_size
+  scripts\train_ppo.py:527:            ),
+> scripts\train_ppo.py:528:            "state_dim": 111,
+  scripts\train_ppo.py:529:            "action_dim": ACTION_DIM,
+> scripts\train_ppo.py:530:            "discount_actions": (
+> scripts\train_ppo.py:531:                DISCOUNT_ACTIONS.tolist()
+  scripts\train_ppo.py:532:            ),
+  scripts\train_ppo.py:533:            "reward": (
+  scripts\train_ppo.py:534:                "paper-style delta margin + delta quantity"
+  scripts\train_ppo.py:545:            ),
+  scripts\train_ppo.py:546:        },
+> scripts\train_ppo.py:547:        checkpoint_path,
+  scripts\train_ppo.py:548:    )
+  scripts\train_ppo.py:549:
+  scripts\train_ppo.py:550:    # -----------------------------------------------------------------
+  scripts\train_ppo.py:577:        + ", ".join(
+  scripts\train_ppo.py:578:            f"{int(x)}%"
+> scripts\train_ppo.py:579:            for x in DISCOUNT_ACTIONS
+  scripts\train_ppo.py:580:        )
+  scripts\train_ppo.py:581:    )
+  scripts\train_ppo.py:582:
+  scripts\train_ppo.py:587:
+  scripts\train_ppo.py:588:    print(
+> scripts\train_ppo.py:589:        f"Checkpoint: "
+> scripts\train_ppo.py:590:        f"{checkpoint_path}"
+  scripts\train_ppo.py:591:    )
+  scripts\train_ppo.py:592:
+  scripts\train_ppo.py:593:
+  scripts\evaluate_ppo_reproduction.py:18:from src.environment.counterfactual_simulator import CounterfactualSimulator
+  scripts\evaluate_ppo_reproduction.py:19:from src.environment.pricing_economics import calculate_pricing_outcome
+> scripts\evaluate_ppo_reproduction.py:20:from src.environment.reward import SALES_REWARD, calculate_reward
+  scripts\evaluate_ppo_reproduction.py:21:
+  scripts\evaluate_ppo_reproduction.py:22:
+  scripts\evaluate_ppo_reproduction.py:23:ROOT = Path(__file__).resolve().parents[1]
+> scripts\evaluate_ppo_reproduction.py:24:CHECKPOINT = ROOT / "models/ppo/ppo_batched_economic_50_updates.pth"
+  scripts\evaluate_ppo_reproduction.py:25:PRODUCTS = ROOT / "data/processed/products_clean.parquet"
+  scripts\evaluate_ppo_reproduction.py:26:OUTPUT_DIR = ROOT / "reports/base_paper_reproduction"
+  scripts\evaluate_ppo_reproduction.py:27:DISCOUNTS = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+  scripts\evaluate_ppo_reproduction.py:42:        )
+  scripts\evaluate_ppo_reproduction.py:43:
+> scripts\evaluate_ppo_reproduction.py:44:    for path in (CHECKPOINT, PRODUCTS):
+  scripts\evaluate_ppo_reproduction.py:45:        if not path.exists():
+  scripts\evaluate_ppo_reproduction.py:46:            raise FileNotFoundError(f"Required file not found: {path}")
+  scripts\evaluate_ppo_reproduction.py:47:
+  scripts\evaluate_ppo_reproduction.py:48:    device = torch.device("cpu")
+> scripts\evaluate_ppo_reproduction.py:49:    checkpoint = torch.load(
+> scripts\evaluate_ppo_reproduction.py:50:        CHECKPOINT, map_location=device, weights_only=False
+  scripts\evaluate_ppo_reproduction.py:51:    )
+  scripts\evaluate_ppo_reproduction.py:52:
+> scripts\evaluate_ppo_reproduction.py:53:    if checkpoint.get("state_dim") != 111 or checkpoint.get("action_dim") != 9:
+  scripts\evaluate_ppo_reproduction.py:54:        raise ValueError(
+> scripts\evaluate_ppo_reproduction.py:55:            "Checkpoint dimensions do not match the expected 111-state, "
+  scripts\evaluate_ppo_reproduction.py:56:            "9-action configuration."
+  scripts\evaluate_ppo_reproduction.py:57:        )
+  scripts\evaluate_ppo_reproduction.py:58:
+> scripts\evaluate_ppo_reproduction.py:59:    actor = PPOActor(state_dim=111, action_dim=9).to(device)
+> scripts\evaluate_ppo_reproduction.py:60:    actor.load_state_dict(checkpoint["actor_state_dict"])
+  scripts\evaluate_ppo_reproduction.py:61:    actor.eval()
+  scripts\evaluate_ppo_reproduction.py:62:
+  scripts\evaluate_ppo_reproduction.py:63:    dataset = load_ppo_dataset(
+> scripts\evaluate_ppo_reproduction.py:64:        state_path=ROOT / "data/processed/state/state.npy",
+> scripts\evaluate_ppo_reproduction.py:65:        index_path=ROOT / "data/processed/state/state_row_indices.npy",
+  scripts\evaluate_ppo_reproduction.py:66:        products_path=PRODUCTS,
+  scripts\evaluate_ppo_reproduction.py:67:    )
+  scripts\evaluate_ppo_reproduction.py:68:
+  scripts\evaluate_ppo_reproduction.py:73:        raise RuntimeError("State/product alignment check failed.")
+  scripts\evaluate_ppo_reproduction.py:74:
+> scripts\evaluate_ppo_reproduction.py:75:    if "MonthNum" not in aligned.columns:
+> scripts\evaluate_ppo_reproduction.py:76:        raise ValueError("MonthNum is required for the chronological test split.")
+  scripts\evaluate_ppo_reproduction.py:77:
+> scripts\evaluate_ppo_reproduction.py:78:    test_mask = aligned["MonthNum"].isin([9, 10]).to_numpy()
+  scripts\evaluate_ppo_reproduction.py:79:    states = dataset.states[test_mask]
+  scripts\evaluate_ppo_reproduction.py:80:    test_products = aligned.loc[test_mask].reset_index(drop=True)
+  scripts\evaluate_ppo_reproduction.py:81:    contexts = [
+  scripts\evaluate_ppo_reproduction.py:84:
+  scripts\evaluate_ppo_reproduction.py:85:    if len(states) == 0:
+> scripts\evaluate_ppo_reproduction.py:86:        raise RuntimeError("No test observations found for MonthNum 9–10.")
+  scripts\evaluate_ppo_reproduction.py:87:
+  scripts\evaluate_ppo_reproduction.py:88:    # Deterministic policy: choose the highest-probability action.
+  scripts\evaluate_ppo_reproduction.py:89:    with torch.no_grad():
+  scripts\evaluate_ppo_reproduction.py:95:
+  scripts\evaluate_ppo_reproduction.py:96:    simulator = CounterfactualSimulator(
+> scripts\evaluate_ppo_reproduction.py:97:        checkpoint_dir=str(ROOT / "models/sales_predictor"),
+  scripts\evaluate_ppo_reproduction.py:98:        device=device,
+  scripts\evaluate_ppo_reproduction.py:99:    )
+  scripts\evaluate_ppo_reproduction.py:100:
+  scripts\evaluate_ppo_reproduction.py:145:
+  scripts\evaluate_ppo_reproduction.py:146:            reward = (
+> scripts\evaluate_ppo_reproduction.py:147:                calculate_reward(delta_margin, delta_quantity, SALES_REWARD)
+  scripts\evaluate_ppo_reproduction.py:148:                if np.isfinite(delta_margin) and np.isfinite(delta_quantity)
+  scripts\evaluate_ppo_reproduction.py:149:                else np.nan
+  scripts\evaluate_ppo_reproduction.py:150:            )
+  scripts\evaluate_ppo_reproduction.py:153:                "test_position": i,
+  scripts\evaluate_ppo_reproduction.py:154:                "source_row_index": int(dataset.source_row_indices[np.flatnonzero(test_mask)[i]]),
+> scripts\evaluate_ppo_reproduction.py:155:                "month_num": int(test_products.iloc[i]["MonthNum"]),
+  scripts\evaluate_ppo_reproduction.py:156:                "discount_percent": candidate_discount,
+  scripts\evaluate_ppo_reproduction.py:157:                "predicted_growth_percent": growth,
+  scripts\evaluate_ppo_reproduction.py:158:                "estimated_sales": outcome.estimated_sales,
+  scripts\evaluate_ppo_reproduction.py:173:                dataset.source_row_indices[np.flatnonzero(test_mask)[i]]
+  scripts\evaluate_ppo_reproduction.py:174:            ),
+> scripts\evaluate_ppo_reproduction.py:175:            "month_num": int(test_products.iloc[i]["MonthNum"]),
+  scripts\evaluate_ppo_reproduction.py:176:            "observed_discount_percent": context.observed_discount,
+  scripts\evaluate_ppo_reproduction.py:177:            "recommended_action_index": int(action),
+  scripts\evaluate_ppo_reproduction.py:178:            "recommended_discount_percent": int(discount),
+  scripts\evaluate_ppo_reproduction.py:208:    summary = {
+  scripts\evaluate_ppo_reproduction.py:209:        "evaluation": "deterministic held-out PPO policy evaluation",
+> scripts\evaluate_ppo_reproduction.py:210:        "checkpoint": str(CHECKPOINT.relative_to(ROOT)),
+> scripts\evaluate_ppo_reproduction.py:211:        "checkpoint_updates": checkpoint.get("updates"),
+> scripts\evaluate_ppo_reproduction.py:212:        "seed": checkpoint.get("seed"),
+> scripts\evaluate_ppo_reproduction.py:213:        "state_dimension": 111,
+  scripts\evaluate_ppo_reproduction.py:214:        "action_dimension": 9,
+  scripts\evaluate_ppo_reproduction.py:215:        "discount_bins_percent": DISCOUNTS,
+  scripts\evaluate_ppo_reproduction.py:216:        "test_months": [9, 10],
+  scripts\train_sales_predictor.py:9:    → Linear(64, 1)
+  scripts\train_sales_predictor.py:10:
+> scripts\train_sales_predictor.py:11:Target: Estimated Monthly Sales Growth Rate (%)
+  scripts\train_sales_predictor.py:12:After training, the model is frozen and saved. PPO will use it as the
+  scripts\train_sales_predictor.py:13:transition/simulation engine during policy optimisation.
+  scripts\train_sales_predictor.py:14:
+  scripts\train_sales_predictor.py:69:# ── Data prep ────────────────────────────────────────────────
+  scripts\train_sales_predictor.py:70:def prepare_data(state: np.ndarray, df: pd.DataFrame):
+> scripts\train_sales_predictor.py:71:    target = df["Estimated Monthly Sales Growth Rate"].fillna(0.0).values.astype(np.float32)
+  scripts\train_sales_predictor.py:72:    discount = df["Discount"].fillna(0.0).values.astype(np.float32).reshape(-1, 1)
+  scripts\train_sales_predictor.py:73:    X = np.concatenate([state, discount], axis=1).astype(np.float32)
+  scripts\train_sales_predictor.py:74:    return X, target
+  scripts\train_sales_predictor.py:228:
+  scripts\train_sales_predictor.py:229:    # ── Load state and dataset ────────────────────────────────
+> scripts\train_sales_predictor.py:230:    state = np.load("data/processed/state/state.npy")
+  scripts\train_sales_predictor.py:231:    df = pd.read_parquet("data/processed/products_clean.parquet").reset_index(drop=True)
+> scripts\train_sales_predictor.py:232:    if os.path.exists("data/processed/state/state_row_indices.npy"):
+> scripts\train_sales_predictor.py:233:        row_indices = np.load("data/processed/state/state_row_indices.npy")
+  scripts\train_sales_predictor.py:234:        df = df.iloc[row_indices].reset_index(drop=True)
+  scripts\train_sales_predictor.py:235:    assert len(state) == len(df), f"State / dataset length mismatch: {len(state)} vs {len(df)}"
+  scripts\train_sales_predictor.py:236:
+  scripts\train_sales_predictor.py:237:    X, y = prepare_data(state, df)
+  scripts\train_sales_predictor.py:238:
+> scripts\train_sales_predictor.py:239:    train_mask = df["MonthNum"].isin([1, 2, 3, 4, 5, 6]).values
+> scripts\train_sales_predictor.py:240:    val_mask   = df["MonthNum"].isin([7, 8]).values
+> scripts\train_sales_predictor.py:241:    test_mask  = df["MonthNum"].isin([9, 10]).values
+  scripts\train_sales_predictor.py:242:
+> scripts\train_sales_predictor.py:243:    X_train, y_train = X[train_mask], y[train_mask]
+  scripts\train_sales_predictor.py:244:    X_val,   y_val   = X[val_mask],   y[val_mask]
+  scripts\train_sales_predictor.py:245:    X_test,  y_test  = X[test_mask],  y[test_mask]
+  scripts\train_sales_predictor.py:246:
+  scripts\train_sales_predictor.py:276:
+  scripts\train_sales_predictor.py:277:    # ── Load best ─────────────────────────────────────────────
+> scripts\train_sales_predictor.py:278:    model.load_state_dict(torch.load("models/sales_predictor/best_model.pth", map_location=device))
+  scripts\train_sales_predictor.py:279:    model.eval()
+  scripts\train_sales_predictor.py:280:
+  scripts\train_sales_predictor.py:281:    # ── Evaluate on test set ──────────────────────────────────
+  scripts\train_sales_predictor.py:334:        "architecture": f"MLP: {input_dim}→256→BN→128→BN→64→1 (ItaNet-111 Predictor)",
+  scripts\train_sales_predictor.py:335:        "input_dim": int(input_dim),
+> scripts\train_sales_predictor.py:336:        "state_dim": int(state.shape[1]),
+  scripts\train_sales_predictor.py:337:        "action_dim": 1,
+  scripts\train_sales_predictor.py:338:        "discount_bins": DISCOUNT_BINS,
+> scripts\train_sales_predictor.py:339:        "target": "Estimated Monthly Sales Growth Rate",
+  scripts\train_sales_predictor.py:340:        "activation": "ReLU",
+  scripts\train_sales_predictor.py:341:        "optimizer": "Adam",
+  scripts\train_sales_predictor.py:342:        "lr": 1e-3,
+
+

@@ -1,0 +1,94 @@
+Project root: D:\College\Semesters\6th Sem\mini-project
+Candidate files found: 15
+This audit reads file names and schemas; it does not modify source files.
+
+===========================================================================
+FILE: data\processed\features\extraction_progress.json
+SIZE_BYTES: 83
+COLUMNS: completed_indices, total, timestamp
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: []
+===========================================================================
+FILE: data\processed\features\feature_index.parquet
+SIZE_BYTES: 279088
+COLUMNS: ASIN
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: ['ASIN']
+===========================================================================
+FILE: data\processed\features\image_feature_mapping.csv
+SIZE_BYTES: 2875533
+COLUMNS: row_id, ASIN, image_url, image_id, unique_feature_index
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: ['ASIN']
+===========================================================================
+FILE: data\processed\features\image_feature_status.csv
+SIZE_BYTES: 552117
+COLUMNS: row_id, status, error
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: []
+===========================================================================
+FILE: data\processed\features_train_only\attribute_preprocessing_report.json
+SIZE_BYTES: 612
+COLUMNS: rows, training_rows, training_months, validation_months, test_months, feature_dimension, expected_dimension, fit_scope, transform_scope, projection_used, finite_values, feature_path, index_path
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: []
+===========================================================================
+FILE: data\processed\features_train_only\feature_index.parquet
+SIZE_BYTES: 278659
+COLUMNS: ASIN
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: ['ASIN']
+===========================================================================
+FILE: data\processed\images\image_manifest.csv
+SIZE_BYTES: 8046984
+COLUMNS: row_id, ASIN, image_url, image_id, local_path, download_status, http_status, content_type, width, height, file_size_bytes, sha256, error_message
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: ['ASIN']
+===========================================================================
+FILE: data\processed\images\unique_image_manifest.csv
+SIZE_BYTES: 4938813
+COLUMNS: image_id, image_url, local_path, download_status, http_status, content_type, width, height, file_size_bytes, sha256, error_message
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: []
+===========================================================================
+FILE: data\processed\products_clean.parquet
+SIZE_BYTES: 6571958
+COLUMNS: Country Site, ASIN, Title, PASIN, Listing Time, Listing Duration, Main Category BSR Category, Main Category BSR Ranking, Main Category BSR Change Number, Main Category BSR Change Rate, Subcategory BSR Category, Subcategory BSR Ranking, Subcategory BSR Change Number, Subcategory BSR Change Rate, Buybox Price (USD), Total Rating Count, New Rating Count, Rating Score, Positive Rating Rate, Negative Rating Rate, Total Review Count, New Review Count, Weight (pounds), Volume (cubic inches), Brand, Number of Variants, Buybox Seller, Buybox Seller Type, Buybox Seller Location, Delivery Method, Number of Sellers, FBA Shipping Fee (USD), Gross Margin Rate, Main Image URL, Deal Month, Last Monthly Sales, Discount, Estimated Monthly Sales Growth Rate, MonthNum
+REVIEW_RELATED_COLUMNS: ['Total Rating Count', 'New Rating Count', 'Rating Score', 'Positive Rating Rate', 'Negative Rating Rate', 'Total Review Count', 'New Review Count']
+PRODUCT_ID_COLUMNS: ['ASIN', 'PASIN']
+===========================================================================
+FILE: data\processed\products_test.parquet
+SIZE_BYTES: 1396317
+COLUMNS: Country Site, ASIN, Title, PASIN, Listing Time, Listing Duration, Main Category BSR Category, Main Category BSR Ranking, Main Category BSR Change Number, Main Category BSR Change Rate, Subcategory BSR Category, Subcategory BSR Ranking, Subcategory BSR Change Number, Subcategory BSR Change Rate, Buybox Price (USD), Total Rating Count, New Rating Count, Rating Score, Positive Rating Rate, Negative Rating Rate, Total Review Count, New Review Count, Weight (pounds), Volume (cubic inches), Brand, Number of Variants, Buybox Seller, Buybox Seller Type, Buybox Seller Location, Delivery Method, Number of Sellers, FBA Shipping Fee (USD), Gross Margin Rate, Main Image URL, Deal Month, Last Monthly Sales, Discount, Estimated Monthly Sales Growth Rate, MonthNum
+REVIEW_RELATED_COLUMNS: ['Total Rating Count', 'New Rating Count', 'Rating Score', 'Positive Rating Rate', 'Negative Rating Rate', 'Total Review Count', 'New Review Count']
+PRODUCT_ID_COLUMNS: ['ASIN', 'PASIN']
+===========================================================================
+FILE: data\processed\products_train.parquet
+SIZE_BYTES: 3936978
+COLUMNS: Country Site, ASIN, Title, PASIN, Listing Time, Listing Duration, Main Category BSR Category, Main Category BSR Ranking, Main Category BSR Change Number, Main Category BSR Change Rate, Subcategory BSR Category, Subcategory BSR Ranking, Subcategory BSR Change Number, Subcategory BSR Change Rate, Buybox Price (USD), Total Rating Count, New Rating Count, Rating Score, Positive Rating Rate, Negative Rating Rate, Total Review Count, New Review Count, Weight (pounds), Volume (cubic inches), Brand, Number of Variants, Buybox Seller, Buybox Seller Type, Buybox Seller Location, Delivery Method, Number of Sellers, FBA Shipping Fee (USD), Gross Margin Rate, Main Image URL, Deal Month, Last Monthly Sales, Discount, Estimated Monthly Sales Growth Rate, MonthNum
+REVIEW_RELATED_COLUMNS: ['Total Rating Count', 'New Rating Count', 'Rating Score', 'Positive Rating Rate', 'Negative Rating Rate', 'Total Review Count', 'New Review Count']
+PRODUCT_ID_COLUMNS: ['ASIN', 'PASIN']
+===========================================================================
+FILE: data\processed\products_val.parquet
+SIZE_BYTES: 1262722
+COLUMNS: Country Site, ASIN, Title, PASIN, Listing Time, Listing Duration, Main Category BSR Category, Main Category BSR Ranking, Main Category BSR Change Number, Main Category BSR Change Rate, Subcategory BSR Category, Subcategory BSR Ranking, Subcategory BSR Change Number, Subcategory BSR Change Rate, Buybox Price (USD), Total Rating Count, New Rating Count, Rating Score, Positive Rating Rate, Negative Rating Rate, Total Review Count, New Review Count, Weight (pounds), Volume (cubic inches), Brand, Number of Variants, Buybox Seller, Buybox Seller Type, Buybox Seller Location, Delivery Method, Number of Sellers, FBA Shipping Fee (USD), Gross Margin Rate, Main Image URL, Deal Month, Last Monthly Sales, Discount, Estimated Monthly Sales Growth Rate, MonthNum
+REVIEW_RELATED_COLUMNS: ['Total Rating Count', 'New Rating Count', 'Rating Score', 'Positive Rating Rate', 'Negative Rating Rate', 'Total Review Count', 'New Review Count']
+PRODUCT_ID_COLUMNS: ['ASIN', 'PASIN']
+===========================================================================
+FILE: data\processed\state\state_validity.csv
+SIZE_BYTES: 1342038
+COLUMNS: row_index, ASIN, image_features_valid, complete_state_valid, invalid_reason, split
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: ['ASIN']
+===========================================================================
+FILE: data\processed\state_train_only\state_validity.csv
+SIZE_BYTES: 1001359
+COLUMNS: row_index, ASIN, image_features_finite, split
+REVIEW_RELATED_COLUMNS: []
+PRODUCT_ID_COLUMNS: ['ASIN']
+===========================================================================
+FILE: data\raw\products.csv
+SIZE_BYTES: 15727844
+COLUMNS: Country Site, ASIN, Title, PASIN, Listing Time, Listing Duration, Main Category BSR Category, Main Category BSR Ranking, Main Category BSR Change Number, Main Category BSR Change Rate, Subcategory BSR Category, Subcategory BSR Ranking, Subcategory BSR Change Number, Subcategory BSR Change Rate, Buybox Price (USD), Total Rating Count, New Rating Count, Rating Score, Positive Rating Rate, Negative Rating Rate, Total Review Count, New Review Count, Weight (pounds), Volume (cubic inches), Brand, Number of Variants, Buybox Seller, Buybox Seller Type, Buybox Seller Location, Delivery Method, Number of Sellers, FBA Shipping Fee (USD), Gross Margin Rate, Main Image URL, Deal Month, Last Monthly Sales, Discount, Estimated Monthly Sales Growth Rate
+REVIEW_RELATED_COLUMNS: ['Total Rating Count', 'New Rating Count', 'Rating Score', 'Positive Rating Rate', 'Negative Rating Rate', 'Total Review Count', 'New Review Count']
+PRODUCT_ID_COLUMNS: ['ASIN', 'PASIN']

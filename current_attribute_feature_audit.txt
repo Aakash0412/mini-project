@@ -1,0 +1,413 @@
+﻿
+  scripts\build_state.py:5:    Image      : 32-D
+  scripts\build_state.py:6:    Text       : 32-D
+> scripts\build_state.py:7:    Attributes : 47-D
+  scripts\build_state.py:8:    Sentiment  : unavailable
+  scripts\build_state.py:9:
+  scripts\build_state.py:10:Total:
+> scripts\build_state.py:11:    32 + 32 + 47 = 111-D
+  scripts\build_state.py:12:
+  scripts\build_state.py:13:The original paper defines a 121-D state by additionally including
+  scripts\build_state.py:14:10-D review sentiment. The public dataset does not provide the
+  scripts\build_state.py:52:
+  scripts\build_state.py:53:TEXT_PATH = os.path.join(FEATURE_DIR, "text_features.npy")
+> scripts\build_state.py:54:ATTRIBUTE_PATH = os.path.join(FEATURE_DIR, "attribute_features.npy")
+  scripts\build_state.py:55:IMAGE_PATH = os.path.join(FEATURE_DIR, "image_features.npy")
+  scripts\build_state.py:56:
+  scripts\build_state.py:57:INDEX_PATH = os.path.join(FEATURE_DIR, "feature_index.parquet")
+  scripts\build_state.py:74:
+  scripts\build_state.py:75:    text_features = np.load(TEXT_PATH)
+> scripts\build_state.py:76:    attribute_features = np.load(ATTRIBUTE_PATH)
+  scripts\build_state.py:77:    image_features = np.load(IMAGE_PATH)
+  scripts\build_state.py:78:
+  scripts\build_state.py:79:    print(f"  Text       : {text_features.shape}")
+> scripts\build_state.py:80:    print(f"  Attributes : {attribute_features.shape}")
+  scripts\build_state.py:81:    print(f"  Image      : {image_features.shape}")
+  scripts\build_state.py:82:
+  scripts\build_state.py:83:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:87:    n_rows = len(text_features)
+  scripts\build_state.py:88:
+> scripts\build_state.py:89:    if len(attribute_features) != n_rows:
+  scripts\build_state.py:90:        raise ValueError(
+  scripts\build_state.py:91:            "Feature row mismatch: text and attributes have "
+  scripts\build_state.py:92:            f"different row counts: "
+> scripts\build_state.py:93:            f"{len(text_features)} vs {len(attribute_features)}"
+  scripts\build_state.py:94:        )
+  scripts\build_state.py:95:
+  scripts\build_state.py:96:    if len(image_features) != n_rows:
+  scripts\build_state.py:140:        image_features=image_features[image_valid_mask],
+  scripts\build_state.py:141:        text_features=text_features[image_valid_mask],
+> scripts\build_state.py:142:        attribute_features=attribute_features[image_valid_mask],
+  scripts\build_state.py:143:        sentiment_features=None,
+  scripts\build_state.py:144:    )
+  scripts\build_state.py:145:
+  scripts\build_state.py:373:            "Image (32)",
+  scripts\build_state.py:374:            "Text (32)",
+> scripts\build_state.py:375:            "Attributes (47)",
+  scripts\build_state.py:376:        ],
+  scripts\build_state.py:377:
+  scripts\build_state.py:378:        "modalities_missing": [
+  scripts\build_state_train_only.py:19:TEXT_PATH = FEATURE_DIR / "text_features.npy"
+  scripts\build_state_train_only.py:20:IMAGE_PATH = FEATURE_DIR / "image_features.npy"
+> scripts\build_state_train_only.py:21:ATTRIBUTE_PATH = CORRECTED_DIR / "attribute_features_train_only.npy"
+  scripts\build_state_train_only.py:22:INDEX_PATH = CORRECTED_DIR / "feature_index.parquet"
+  scripts\build_state_train_only.py:23:DATA_PATH = Path("data/processed/products_clean.parquet")
+  scripts\build_state_train_only.py:24:SPLIT_PATH = Path("configs/data_split.yaml")
+  scripts\build_state_train_only.py:54:    if text.shape[1] != 32 or image.shape[1] != 32:
+  scripts\build_state_train_only.py:55:        raise ValueError("Expected 32-D image and text features.")
+> scripts\build_state_train_only.py:56:    if attributes.shape[1] != 47:
+> scripts\build_state_train_only.py:57:        raise ValueError("Expected 47-D corrected attributes.")
+  scripts\build_state_train_only.py:58:
+  scripts\build_state_train_only.py:59:    with SPLIT_PATH.open("r", encoding="utf-8-sig") as f:
+  scripts\build_state_train_only.py:60:        split = yaml.safe_load(f)["split"]
+  scripts\build_state_train_only.py:73:        image_features=np.asarray(image[image_valid]),
+  scripts\build_state_train_only.py:74:        text_features=np.asarray(text[image_valid]),
+> scripts\build_state_train_only.py:75:        attribute_features=np.asarray(attributes[image_valid]),
+  scripts\build_state_train_only.py:76:        sentiment_features=None,
+  scripts\build_state_train_only.py:77:    )
+  scripts\build_state_train_only.py:78:    state = builder.build()
+  scripts\extract_attributes_train_only.py:14:CONFIG_PATH = ROOT / "configs/data_split.yaml"
+  scripts\extract_attributes_train_only.py:15:OUTPUT_DIR = ROOT / "data/processed/features_train_only"
+> scripts\extract_attributes_train_only.py:16:OUTPUT_PATH = OUTPUT_DIR / "attribute_features_train_only.npy"
+  scripts\extract_attributes_train_only.py:17:INDEX_PATH = OUTPUT_DIR / "feature_index.parquet"
+  scripts\extract_attributes_train_only.py:18:REPORT_PATH = OUTPUT_DIR / "attribute_preprocessing_report.json"
+  scripts\extract_attributes_train_only.py:19:
+  scripts\extract_attributes_train_only.py:20:NUMERIC_COLS = [
+  scripts\extract_attributes_train_only.py:21:    "MonthNum", "Total Rating Count", "New Rating Count",
+> scripts\extract_attributes_train_only.py:22:    "Total Review Count", "New Review Count", "Rating Score",
+> scripts\extract_attributes_train_only.py:23:    "Positive Rating Rate", "Negative Rating Rate",
+  scripts\extract_attributes_train_only.py:24:    "Buybox Price (USD)", "Weight (pounds)",
+  scripts\extract_attributes_train_only.py:25:    "Volume (cubic inches)", "Number of Variants",
+  scripts\extract_attributes_train_only.py:26:    "Number of Sellers", "FBA Shipping Fee (USD)",
+  scripts\extract_attributes_train_only.py:29:]
+  scripts\extract_attributes_train_only.py:30:CATEGORICAL_COLS = ["Main Category BSR Category", "Buybox Seller Type"]
+> scripts\extract_attributes_train_only.py:31:EXPECTED_DIM = 47
+  scripts\extract_attributes_train_only.py:32:
+  scripts\extract_attributes_train_only.py:33:
+  scripts\extract_attributes_train_only.py:34:def main():
+  scripts\extract_features.py:21:def extract_attributes(df):
+  scripts\extract_features.py:22:    numeric_cols = [
+> scripts\extract_features.py:23:        'MonthNum', 'Total Rating Count', 'New Rating Count', 'Total Review Count',
+> scripts\extract_features.py:24:        'New Review Count', 'Rating Score', 'Positive Rating Rate', 'Negative Rating Rate',
+  scripts\extract_features.py:25:        'Buybox Price (USD)', 'Weight (pounds)', 'Volume (cubic inches)', 'Number of Variants',
+  scripts\extract_features.py:26:        'Number of Sellers', 'FBA Shipping Fee (USD)', 'Gross Margin Rate',
+  scripts\extract_features.py:27:        'Main Category BSR Ranking', 'Main Category BSR Change Number', 'Main Category BSR Change Rate'
+  scripts\extract_features.py:59:    # Check shape
+  scripts\extract_features.py:60:    current_dim = attributes_array.shape[1]
+> scripts\extract_features.py:61:    expected_dim = 47
+  scripts\extract_features.py:62:    
+  scripts\extract_features.py:63:    if current_dim != expected_dim:
+  scripts\extract_features.py:64:        print(f"Warning: Extracted {current_dim} dims, expected {expected_dim}. Projecting.")
+> scripts\extract_features.py:65:        # Simple linear projection using a fixed random matrix to match 47 if mismatch
+  scripts\extract_features.py:66:        np.random.seed(42)
+  scripts\extract_features.py:67:        proj_matrix = np.random.randn(current_dim, expected_dim) / np.sqrt(current_dim)
+  scripts\extract_features.py:68:        attributes_array = np.dot(attributes_array, proj_matrix)
+  scripts\extract_features.py:104:    print("Extracting attributes...")
+  scripts\extract_features.py:105:    attrs = extract_attributes(df)
+> scripts\extract_features.py:106:    np.save("data/processed/features/attribute_features.npy", attrs)
+  scripts\extract_features.py:107:    print(f"Saved attribute features of shape {attrs.shape}")
+  scripts\extract_features.py:108:    
+  scripts\extract_features.py:109:    print("Extracting text features...")
+  scripts\preprocess_dataset.py:32:    numeric_cols = [
+  scripts\preprocess_dataset.py:33:        'Main Category BSR Ranking', 'Total Rating Count', 'New Rating Count', 
+> scripts\preprocess_dataset.py:34:        'Total Review Count', 'New Review Count', 'Buybox Price (USD)'
+  scripts\preprocess_dataset.py:35:    ]
+  scripts\preprocess_dataset.py:36:    for col in numeric_cols:
+  scripts\preprocess_dataset.py:37:        if col in df.columns:
+  scripts\preprocess_dataset.py:41:    pct_cols = [
+  scripts\preprocess_dataset.py:42:        'Gross Margin Rate', 'Estimated Monthly Sales Growth Rate',
+> scripts\preprocess_dataset.py:43:        'Positive Rating Rate', 'Negative Rating Rate'
+  scripts\preprocess_dataset.py:44:    ]
+  scripts\preprocess_dataset.py:45:    for col in pct_cols:
+  scripts\preprocess_dataset.py:46:        if col in df.columns:
+  scripts\run_ablation.py:17:    Image       = 32-D
+  scripts\run_ablation.py:18:    Text        = 32-D
+> scripts\run_ablation.py:19:    Attributes  = 47-D
+  scripts\run_ablation.py:20:    Total       = 111-D
+  scripts\run_ablation.py:21:
+  scripts\run_ablation.py:22:Target:
+  scripts\run_ablation.py:70:IMAGE_DIM = 32
+  scripts\run_ablation.py:71:TEXT_DIM = 32
+> scripts\run_ablation.py:72:ATTRIBUTE_DIM = 47
+  scripts\run_ablation.py:73:
+  scripts\run_ablation.py:74:DISCOUNT_DIM = 1
+  scripts\run_ablation.py:75:
+  scripts\run_ablation.py:715:            "image_32",
+  scripts\run_ablation.py:716:            "text_32",
+> scripts\run_ablation.py:717:            "attributes_47",
+  scripts\run_ablation.py:718:        ],
+  scripts\run_ablation.py:719:        "sentiment": (
+  scripts\run_ablation.py:720:            "excluded: review text unavailable"
+  scripts\run_ablation.py:1139:        configurations[
+  scripts\run_ablation.py:1140:            "attributes_only"
+> scripts\run_ablation.py:1141:        ]["state"].shape[1] == 47
+  scripts\run_ablation.py:1142:        and
+  scripts\run_ablation.py:1143:        configurations[
+  scripts\run_ablation.py:1144:            "attributes_text"
+  scripts\train_transfer_adapter.py:249:
+  scripts\train_transfer_adapter.py:250:    source_mean = torch.from_numpy(np.array(
+> scripts\train_transfer_adapter.py:251:        [16.086088, 0.45454767, 7.5501084, 2.94], dtype=np.float32
+  scripts\train_transfer_adapter.py:252:    )).to(device)
+  scripts\train_transfer_adapter.py:253:    source_std = torch.from_numpy(np.array(
+  scripts\train_transfer_adapter.py:254:        [16.833755, 0.3890327, 8.238263, 2.0232835], dtype=np.float32
+  scripts\validate_end_to_end.py:9:
+  scripts\validate_end_to_end.py:10:EXPECTED_SHAPES = {
+> scripts\validate_end_to_end.py:11:    "attribute_features.npy": (34041, 47),
+  scripts\validate_end_to_end.py:12:    "text_features.npy": (34041, 32),
+  scripts\validate_end_to_end.py:13:    "image_features.npy": (34041, 32),
+  scripts\validate_end_to_end.py:14:    "state.npy": (34028, 111),
+  scripts\validate_features.py:7:    
+  scripts\validate_features.py:8:    assert os.path.exists("data/processed/features/feature_index.parquet")
+> scripts\validate_features.py:9:    assert os.path.exists("data/processed/features/attribute_features.npy")
+  scripts\validate_features.py:10:    assert os.path.exists("data/processed/features/text_features.npy")
+  scripts\validate_features.py:11:    
+  scripts\validate_features.py:12:    index = pd.read_parquet("data/processed/features/feature_index.parquet")
+  scripts\validate_features.py:13:    N = len(index)
+  scripts\validate_features.py:14:    
+> scripts\validate_features.py:15:    attrs = np.load("data/processed/features/attribute_features.npy")
+  scripts\validate_features.py:16:    text = np.load("data/processed/features/text_features.npy")
+  scripts\validate_features.py:17:    
+> scripts\validate_features.py:18:    assert attrs.shape == (N, 47), f"Expected {(N, 47)}, got {attrs.shape}"
+  scripts\validate_features.py:19:    assert text.shape == (N, 32), f"Expected {(N, 32)}, got {text.shape}"
+  scripts\validate_features.py:20:    
+  scripts\validate_features.py:21:    assert not np.isnan(attrs).any(), "NaN found in attributes"
+  scripts\validate_state.py:3:
+  scripts\validate_state.py:4:Checks:
+> scripts\validate_state.py:5:  1. Correct total dimension (79 — text 32 + attrs 47)
+  scripts\validate_state.py:6:  2. Correct modality ordering
+  scripts\validate_state.py:7:  3. No NaN or Inf
+  scripts\validate_state.py:8:  4. Correct product alignment with feature index
+  scripts\validate_state.py:46:    IMAGE_DIM = 32
+  scripts\validate_state.py:47:    TEXT_DIM = 32
+> scripts\validate_state.py:48:    ATTRIBUTE_DIM = 47
+  scripts\validate_state.py:49:    AVAILABLE_STATE_DIM = IMAGE_DIM + TEXT_DIM + ATTRIBUTE_DIM  # 111
+  scripts\validate_state.py:50:
+  scripts\validate_state.py:51:    # 1. Dimension check
+  scripts\validate_state.py:116:    cached_img = np.load("data/processed/features/image_features.npy")[row_indices]
+  scripts\validate_state.py:117:    cached_text = np.load("data/processed/features/text_features.npy")[row_indices]
+> scripts\validate_state.py:118:    cached_attr = np.load("data/processed/features/attribute_features.npy")[row_indices]
+  scripts\validate_state.py:119:
+  scripts\validate_state.py:120:    if not np.allclose(img_block, cached_img, atol=1e-5):
+  scripts\validate_state.py:121:        errors.append("FAIL: image sub-block does not match cached image_features.npy")
+  scripts\validate_state.py:129:
+  scripts\validate_state.py:130:    if not np.allclose(attr_block, cached_attr, atol=1e-5):
+> scripts\validate_state.py:131:        errors.append("FAIL: attribute sub-block does not match cached attribute_features.npy")
+  scripts\validate_state.py:132:    else:
+> scripts\validate_state.py:133:        print("[PASS] Attribute sub-block matches cached attribute_features.npy")
+  scripts\validate_state.py:134:
+  scripts\validate_state.py:135:    # ── Summary ──────────────────────────────────────────────
+  scripts\validate_state.py:136:    print()
+  src\environment\counterfactual_simulator.py:27:    Image features      :  32-D  (ResNet-50 + JL projection, seed=42)
+  src\environment\counterfactual_simulator.py:28:    Text features       :  32-D  (sentence-transformer + JL projection)
+> src\environment\counterfactual_simulator.py:29:    Attribute features  :  47-D  (one-hot / ordinal encoding)
+  src\environment\counterfactual_simulator.py:30:    ─────────────────────────────
+  src\environment\counterfactual_simulator.py:31:    Total state dim     : 111-D
+  src\environment\counterfactual_simulator.py:32:
+  src\environment\counterfactual_simulator.py:363:        lines = [
+  src\environment\counterfactual_simulator.py:364:            "CounterfactualSimulator",
+> src\environment\counterfactual_simulator.py:365:            f"  state_dim    : {STATE_DIM}  (ItaNet-111: Image 32 + Text 32 + Attrs 47)",
+  src\environment\counterfactual_simulator.py:366:            f"  input_dim    : {INPUT_DIM}  (state + discount)",
+  src\environment\counterfactual_simulator.py:367:            f"  discount_bins: {DISCOUNT_BINS}",
+  src\environment\counterfactual_simulator.py:368:            f"  device       : {self.device}",
+  src\models\itanet.py:13:    Title  (32-D)  | ---> concat ---> 121-D state
+  src\models\itanet.py:14:    Reviews(10-D)  |
+> src\models\itanet.py:15:    Attrs  (47-D)  |
+  src\models\itanet.py:16:
+  src\models\itanet.py:17:Current local implementation:
+  src\models\itanet.py:18:    Image  (32-D)  |
+  src\models\itanet.py:19:    Title  (32-D)  | ---> concat ---> 111-D state
+> src\models\itanet.py:20:    Attrs  (47-D)  |
+  src\models\itanet.py:21:
+  src\models\itanet.py:22:The 10-D review-sentiment modality is not included because the
+  src\models\itanet.py:23:publicly released dataset does not provide the review text/database
+  src\models\itanet.py:26:Therefore:
+  src\models\itanet.py:27:
+> src\models\itanet.py:28:    Paper state       = 32 + 32 + 10 + 47 = 121-D
+> src\models\itanet.py:29:    Current state     = 32 + 32 + 47      = 111-D
+  src\models\itanet.py:30:
+  src\models\itanet.py:31:This is an API-independent local adaptation of the paper's
+  src\models\itanet.py:32:multimodal representation. No synthetic sentiment features are
+  src\models\itanet.py:52:TEXT_DIM = 32
+  src\models\itanet.py:53:SENTIMENT_DIM = 10
+> src\models\itanet.py:54:ATTRIBUTE_DIM = 47
+  src\models\itanet.py:55:
+  src\models\itanet.py:56:# Full state defined by the paper:
+> src\models\itanet.py:57:# 32 + 32 + 10 + 47 = 121
+  src\models\itanet.py:58:PAPER_STATE_DIM = (
+  src\models\itanet.py:59:    IMAGE_DIM
+  src\models\itanet.py:60:    + TEXT_DIM
+  src\models\itanet.py:64:
+  src\models\itanet.py:65:# Current reproducible local state:
+> src\models\itanet.py:66:# 32 + 32 + 47 = 111
+  src\models\itanet.py:67:#
+  src\models\itanet.py:68:# Sentiment is omitted because the required review text/database
+  src\models\itanet.py:69:# is not available in the released dataset.
+  src\models\itanet.py:88:
+  src\models\itanet.py:89:    Current target configuration:
+> src\models\itanet.py:90:        Image (32) + Text (32) + Attributes (47) = 111-D
+  src\models\itanet.py:91:    """
+  src\models\itanet.py:92:
+  src\models\itanet.py:93:    def __init__(
+  src\models\itanet.py:94:        self,
+  src\models\itanet.py:95:        text_features: Optional[np.ndarray] = None,
+> src\models\itanet.py:96:        attribute_features: Optional[np.ndarray] = None,
+  src\models\itanet.py:97:        image_features: Optional[np.ndarray] = None,
+  src\models\itanet.py:98:        sentiment_features: Optional[np.ndarray] = None,
+  src\models\itanet.py:99:    ):
+  src\models\itanet.py:103:                Shape (N, 32). Product-title embeddings.
+  src\models\itanet.py:104:
+> src\models\itanet.py:105:            attribute_features:
+> src\models\itanet.py:106:                Shape (N, 47). Structured numerical/categorical
+  src\models\itanet.py:107:                product attributes.
+  src\models\itanet.py:108:
+  src\models\itanet.py:109:            image_features:
+  src\models\itanet.py:116:        """
+  src\models\itanet.py:117:        self.text_features = text_features
+> src\models\itanet.py:118:        self.attribute_features = attribute_features
+  src\models\itanet.py:119:        self.image_features = image_features
+  src\models\itanet.py:120:        self.sentiment_features = sentiment_features
+  src\models\itanet.py:121:
+  src\models\itanet.py:166:            sizes.append(len(self.sentiment_features))
+  src\models\itanet.py:167:
+> src\models\itanet.py:168:        if self.attribute_features is not None:
+  src\models\itanet.py:169:            if (
+> src\models\itanet.py:170:                self.attribute_features.ndim != 2
+> src\models\itanet.py:171:                or self.attribute_features.shape[1] != ATTRIBUTE_DIM
+  src\models\itanet.py:172:            ):
+  src\models\itanet.py:173:                raise ValueError(
+> src\models\itanet.py:174:                    f"attribute_features must be "
+  src\models\itanet.py:175:                    f"(N, {ATTRIBUTE_DIM}), "
+> src\models\itanet.py:176:                    f"got {self.attribute_features.shape}"
+  src\models\itanet.py:177:                )
+  src\models\itanet.py:178:
+> src\models\itanet.py:179:            sizes.append(len(self.attribute_features))
+  src\models\itanet.py:180:
+  src\models\itanet.py:181:        if len(set(sizes)) > 1:
+  src\models\itanet.py:182:            raise ValueError(
+  src\models\itanet.py:215:            parts.append(self.sentiment_features)
+  src\models\itanet.py:216:
+> src\models\itanet.py:217:        if self.attribute_features is not None:
+> src\models\itanet.py:218:            parts.append(self.attribute_features)
+  src\models\itanet.py:219:
+  src\models\itanet.py:220:        if not parts:
+  src\models\itanet.py:221:            raise ValueError(
+  src\models\itanet.py:259:            dim += SENTIMENT_DIM
+  src\models\itanet.py:260:
+> src\models\itanet.py:261:        if self.attribute_features is not None:
+  src\models\itanet.py:262:            dim += ATTRIBUTE_DIM
+  src\models\itanet.py:263:
+  src\models\itanet.py:264:        return dim
+  src\models\itanet.py:274:            "text": self.text_features is not None,
+  src\models\itanet.py:275:            "sentiment": self.sentiment_features is not None,
+> src\models\itanet.py:276:            "attributes": self.attribute_features is not None,
+  src\models\itanet.py:277:            "state_dim": self.state_dim,
+  src\models\itanet.py:278:            "paper_state_dim": PAPER_STATE_DIM,
+  src\models\itanet.py:279:            "available_state_dim": AVAILABLE_STATE_DIM,
+  docs\ATTRIBUTE_MAPPING.md:1:# Attribute Mapping
+  docs\ATTRIBUTE_MAPPING.md:2:
+> docs\ATTRIBUTE_MAPPING.md:3:The 47-D numerical/categorical attribute state is constructed from available structured fields. To achieve exactly 47 dimensions without arbitrary 
+projections, we apply specific encodings:
+  docs\ATTRIBUTE_MAPPING.md:4:
+  docs\ATTRIBUTE_MAPPING.md:5:| Paper Attribute Equivalent | Dataset Column | Processing | Output Dimension |
+  docs\ATTRIBUTE_MAPPING.md:6:|---|---|---|---|
+  docs\ATTRIBUTE_MAPPING.md:8:| Total Rating | `Total Rating Count` | Numeric (fill NA w/ 0, scale) | 1 |
+  docs\ATTRIBUTE_MAPPING.md:9:| New Rating | `New Rating Count` | Numeric (fill NA w/ 0, scale) | 1 |
+> docs\ATTRIBUTE_MAPPING.md:10:| Total Reviews | `Total Review Count` | Numeric (fill NA w/ 0, scale) | 1 |
+> docs\ATTRIBUTE_MAPPING.md:11:| New Reviews | `New Review Count` | Numeric (fill NA w/ 0, scale) | 1 |
+> docs\ATTRIBUTE_MAPPING.md:12:| Rating Score | `Rating Score` | Numeric (fill NA w/ mean, scale)| 1 |
+> docs\ATTRIBUTE_MAPPING.md:13:| Positive Rating Rate | `Positive Rating Rate` | Numeric (fill NA w/ 0) | 1 |
+> docs\ATTRIBUTE_MAPPING.md:14:| Negative Rating Rate | `Negative Rating Rate` | Numeric (fill NA w/ 0) | 1 |
+  docs\ATTRIBUTE_MAPPING.md:15:| Price | `Buybox Price (USD)` | Numeric (scale) | 1 |
+  docs\ATTRIBUTE_MAPPING.md:16:| Weight | `Weight (pounds)` | Numeric (fill NA w/ mean, scale) | 1 |
+  docs\ATTRIBUTE_MAPPING.md:17:| Volume | `Volume (cubic inches)` | Numeric (fill NA w/ mean, scale) | 1 |
+  docs\ATTRIBUTE_MAPPING.md:26:| Buybox Seller Type | `Buybox Seller Type` | One-Hot Encoding | 2 |
+  docs\ATTRIBUTE_MAPPING.md:27:
+> docs\ATTRIBUTE_MAPPING.md:28:**Total Dimensions: 18 numeric + 27 category one-hot + 2 seller type one-hot = 47-D.**
+  docs\DATASET_PAPER_MAPPING.md:7:| Product image | Main Image URL | PARTIAL | Unavailable | Only URL is provided. Actual images are NOT in the repository. Do not scrape. |
+  docs\DATASET_PAPER_MAPPING.md:8:| Customer reviews | N/A | NO | Unavailable | Only aggregate rating counts exist, no review text for sentiment extraction. |
+> docs\DATASET_PAPER_MAPPING.md:9:| Rating | Rating Score | YES | Direct | |
+  docs\DATASET_PAPER_MAPPING.md:10:| Rating count | Total Rating Count | YES | Parse to int | |
+> docs\DATASET_PAPER_MAPPING.md:11:| Review count | Total Review Count | YES | Parse to int | |
+  docs\DATASET_PAPER_MAPPING.md:12:| BSR | Main Category BSR Ranking | YES | Parse to int | Requires handling commas/non-numeric chars. |
+  docs\DATASET_PAPER_MAPPING.md:13:| Price | Buybox Price (USD) | YES | Parse to float | Requires handling missing/invalid characters. |
+  docs\DATASET_PAPER_MAPPING.md:14:| Discount | Discount | YES | Direct | E.g., 5, 10, 15... |
+  docs\DATASET_PAPER_MAPPING.md:24:## Critical Modality Absences
+  docs\DATASET_PAPER_MAPPING.md:25:1. **Images:** The dataset only contains `Main Image URL`. The actual image files are missing from the repository. Without scraping Amazon 
+(which is explicitly forbidden by project rules), the Image modality cannot be extracted locally. This means the 32-D Image representation of the 121-D ItaNet state cannot be 
+populated as intended.
+> docs\DATASET_PAPER_MAPPING.md:26:2. **Customer Reviews:** The dataset contains aggregate rating scores and counts, but completely lacks the text of customer reviews. The base 
+paper extracts sentiment from top-10 reviews. Without review text, the 10-D Customer Review Sentiment representation cannot be extracted.
+  docs\DATASET_PAPER_MAPPING.md:27:
+  docs\DATASET_PAPER_MAPPING.md:28:### Exact Consequence for Paper Reproduction
+  docs\DATASET_PAPER_MAPPING.md:29:The absence of these two key unstructured modalities (Image and Customer Reviews) prevents the full 121-D ItaNet state from being exactly 
+constructed. The available modalities are only:
+  docs\DATASET_PAPER_MAPPING.md:30:- Product Title (32-D)
+> docs\DATASET_PAPER_MAPPING.md:31:- Structured Attributes (47-D)
+  docs\DATASET_PAPER_MAPPING.md:32:
+  docs\DATASET_PAPER_MAPPING.md:33:We will proceed with preprocessing the available modalities and structured attributes, but the final extracted state will lack the image and 
+review sentiment dimensions, or they must be represented as zeros/omitted as per the missing data policy. We will not hallucinate synthetic images or synthetic reviews.
+  docs\PHASE_1_PAPER_SPECIFICATION.md:43:| Title | ada-002 | MiniLM | 32 |
+  docs\PHASE_1_PAPER_SPECIFICATION.md:44:| Reviews | GPT-4o | RoBERTa sentiment | 10 |
+> docs\PHASE_1_PAPER_SPECIFICATION.md:45:| Attributes | tabular | tabular | 47 |
+  docs\PHASE_1_PAPER_SPECIFICATION.md:46:| TOTAL | — | — | 121 |
+  docs\PHASE_1_PAPER_SPECIFICATION.md:47:
+  docs\PHASE_1_PAPER_SPECIFICATION.md:48:The total state dimension is explicitly **121**.
+  docs\PHASE_1_PAPER_SPECIFICATION.md:128:4. **Text Embedding Dimensionality Projection:** ADA-002 outputs 1536 dims, the state requires 32. The exact projection mechanism 
+(e.g., linear layer or PCA) is not specified.
+  docs\PHASE_1_PAPER_SPECIFICATION.md:129:5. **Sentiment Aggregation Mechanism:** GPT-4o extracts sentiment from top-10 reviews. The method of pooling this into a 10-dimensional 
+vector is unspecified.
+> docs\PHASE_1_PAPER_SPECIFICATION.md:130:6. **Numerical/Categorical Features:** Exact list of the 47 tabular features is missing.
+  docs\PHASE_1_PAPER_SPECIFICATION.md:131:7. **PPO Network Architecture and Hyperparameters:** Missing exact values for LR, clip ratio, GAE lambda, and MLP layer sizes.
+  docs\PHASE_1_PAPER_SPECIFICATION.md:132:8. **Random Seeds:** Unspecified.
+  docs\PHASE_3_COMPLETION_REPORT.md:5:- **Product Title:** Extracted using `all-MiniLM-L6-v2` locally (engineering adaptation, no OpenAI API). The native 384-D output is 
+deterministically projected to 32-D using a fixed random projection matrix.
+  docs\PHASE_3_COMPLETION_REPORT.md:6:- **Customer Reviews:** `cardiffnlp/twitter-roberta-base-sentiment-latest` was specified, but review text is entirely **UNAVAILABLE** in 
+the dataset (only aggregate rating counts). This modality cannot be extracted.
+> docs\PHASE_3_COMPLETION_REPORT.md:7:- **Structured Attributes:** 47-D representation extracted using StandardScaler for numerics and OneHotEncoder for categoricals.
+  docs\PHASE_3_COMPLETION_REPORT.md:8:
+  docs\PHASE_3_COMPLETION_REPORT.md:9:## Feature Dimensions
+> docs\PHASE_3_COMPLETION_REPORT.md:10:- `attribute_features.npy`: (34041, 47)
+  docs\PHASE_3_COMPLETION_REPORT.md:11:- `text_features.npy`: (34041, 32)
+  docs\PHASE_3_COMPLETION_REPORT.md:12:- Total valid products processed: 34,041.
+  docs\PHASE_3_COMPLETION_REPORT.md:13:
+  docs\PHASE_4_COMPLETION_REPORT.md:12:| Text (Title) | 32 | ✅ Available | all-MiniLM-L6-v2 → random projection |
+  docs\PHASE_4_COMPLETION_REPORT.md:13:| Sentiment (Reviews) | 10 | **UNAVAILABLE** | No review text in dataset |
+> docs\PHASE_4_COMPLETION_REPORT.md:14:| Attributes | 47 | ✅ Available | Numeric + one-hot structured fields |
+  docs\PHASE_4_COMPLETION_REPORT.md:15:| **TOTAL (Paper)** | **121** | — | — |
+  docs\PHASE_4_COMPLETION_REPORT.md:16:| **TOTAL (This impl)** | **79** | — | Text + Attrs only |
+  docs\PHASE_4_COMPLETION_REPORT.md:17:
+  docs\PHASE_4_COMPLETION_REPORT.md:22:## Static / Dynamic Split
+  docs\PHASE_4_COMPLETION_REPORT.md:23:- **Static context** (`c_i`): Title embedding, Category one-hot, Brand-related features
+> docs\PHASE_4_COMPLETION_REPORT.md:24:- **Dynamic signals** (`d_t,i`): Month, Price, BSR Ranking, Review counts, Rating score
+  docs\PHASE_4_COMPLETION_REPORT.md:25:
+  docs\PHASE_4_COMPLETION_REPORT.md:26:## Sample Counts
+  docs\PHASE_4_COMPLETION_REPORT.md:27:
+  docs\PHASE_4_COMPLETION_REPORT.md:47:6. ✅ No temporal leakage
+  docs\PHASE_4_COMPLETION_REPORT.md:48:7. ✅ Text sub-block matches `text_features.npy`
+> docs\PHASE_4_COMPLETION_REPORT.md:49:8. ✅ Attribute sub-block matches `attribute_features.npy`
+  docs\PHASE_4_COMPLETION_REPORT.md:50:
+  docs\PHASE_4_COMPLETION_REPORT.md:51:## Implementation Deviations
+  docs\PHASE_4_COMPLETION_REPORT.md:52:- **State dim is 79, not 121.** Image (32) and Sentiment (10) modalities are missing from the dataset.  
+  docs\PHASE_5_COMPLETION_REPORT.md:71:| 5 | 510 | 58.3 | 172.5 |
+  docs\PHASE_5_COMPLETION_REPORT.md:72:| 10 | 824 | 172.5 | 2333.7 |
+> docs\PHASE_5_COMPLETION_REPORT.md:73:| 15 | 1347 | 115.6 | 609.7 |
+  docs\PHASE_5_COMPLETION_REPORT.md:74:| 20 | 1625 | 88.0 | 552.9 |
+  docs\PHASE_5_COMPLETION_REPORT.md:75:| 25 | 898 | 101.8 | 757.1 |
+  docs\PHASE_5_COMPLETION_REPORT.md:76:| 30 | 773 | 161.6 | 2391.7 |
+  docs\REPRODUCTION_CONTRACT.md:4:The following components must exactly match the conceptual architecture and reported logic of the base paper:
+  docs\REPRODUCTION_CONTRACT.md:5:- **ItaNet Concept:** The Image + Text + Attributes Fusion Network.
+> docs\REPRODUCTION_CONTRACT.md:6:- **121-D State:** The state representation must be exactly 121 dimensions (Image: 32, Title: 32, Reviews: 10, Attributes: 47).
+  docs\REPRODUCTION_CONTRACT.md:7:- **Reward Formulation:** `r_t = alpha * Delta M_t + beta * Delta Q_t` where `alpha + beta = 1`.
+  docs\REPRODUCTION_CONTRACT.md:8:- **0–40% Discount Range:** The action space consists of 9 discrete discount tiers (0, 5, 10, 15, 20, 25, 30, 35, 40%).
+  docs\REPRODUCTION_CONTRACT.md:9:- **Multimodal Inputs:** The model must process image, text (title), review (sentiment), and numerical/categorical attributes.
+  docs\STATE_CONSTRUCTION.md:13:- Text: 32-D (Available)
+  docs\STATE_CONSTRUCTION.md:14:- Sentiment: 10-D (Unavailable)
+> docs\STATE_CONSTRUCTION.md:15:- Attributes: 47-D (Available)
+  docs\STATE_CONSTRUCTION.md:16:
+> docs\STATE_CONSTRUCTION.md:17:**Implementation Deviation:** Because Images and Customer Reviews are missing from the dataset (and fabricating them is prohibited), the state 
+will consist only of available modalities: Text (32-D) and Attributes (47-D). 
+  docs\STATE_CONSTRUCTION.md:18:**Final State Dimension:** 79-D.
+  docs\STATE_CONSTRUCTION.md:19:
+  docs\STATE_CONSTRUCTION.md:20:## Feature Fusion
+
+

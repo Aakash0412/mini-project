@@ -1,0 +1,1606 @@
+﻿
+  scripts\analyze_counterfactual_curve.py:95:            values.max() - values.min()
+  scripts\analyze_counterfactual_curve.py:96:        )
+  scripts\analyze_counterfactual_curve.py:97:
+  scripts\analyze_counterfactual_curve.py:98:        print(
+  scripts\analyze_counterfactual_curve.py:99:            "  Finite:",
+> scripts\analyze_counterfactual_curve.py:100:            np.isfinite(values).all()
+  scripts\analyze_counterfactual_curve.py:101:        )
+  scripts\analyze_counterfactual_curve.py:102:
+  scripts\analyze_counterfactual_curve.py:103:        print()
+  scripts\analyze_counterfactual_curve.py:104:
+  scripts\analyze_counterfactual_curve.py:105:    print("=" * 65)
+  scripts\analyze_economic_robustness.py:31:
+  scripts\analyze_economic_robustness.py:32:
+  scripts\analyze_economic_robustness.py:33:def bootstrap_mean_ci(values, rng):
+  scripts\analyze_economic_robustness.py:34:    """Percentile bootstrap CI for the mean of paired product differences."""
+  scripts\analyze_economic_robustness.py:35:    values = np.asarray(values, dtype=float)
+> scripts\analyze_economic_robustness.py:36:    values = values[np.isfinite(values)]
+  scripts\analyze_economic_robustness.py:37:
+  scripts\analyze_economic_robustness.py:38:    if len(values) == 0:
+  scripts\analyze_economic_robustness.py:39:        return None, None, None
+  scripts\analyze_economic_robustness.py:40:
+  scripts\analyze_economic_robustness.py:41:    observed_mean = float(values.mean())
+  scripts\analyze_economic_robustness.py:51:
+  scripts\analyze_economic_robustness.py:52:
+  scripts\analyze_economic_robustness.py:53:def bootstrap_share_ci(indicators, rng):
+  scripts\analyze_economic_robustness.py:54:    """Percentile bootstrap CI for a product-level event share."""
+  scripts\analyze_economic_robustness.py:55:    values = np.asarray(indicators, dtype=float)
+> scripts\analyze_economic_robustness.py:56:    values = values[np.isfinite(values)]
+  scripts\analyze_economic_robustness.py:57:
+  scripts\analyze_economic_robustness.py:58:    if len(values) == 0:
+  scripts\analyze_economic_robustness.py:59:        return None, None, None
+  scripts\analyze_economic_robustness.py:60:
+  scripts\analyze_economic_robustness.py:61:    observed = float(values.mean() * 100)
+  scripts\analyze_economic_robustness.py:72:
+  scripts\analyze_economic_robustness.py:73:def summarize_comparison(
+  scripts\analyze_economic_robustness.py:74:    differences, noise, comparison, metric, rng
+  scripts\analyze_economic_robustness.py:75:):
+  scripts\analyze_economic_robustness.py:76:    differences = np.asarray(differences, dtype=float)
+> scripts\analyze_economic_robustness.py:77:    differences = differences[np.isfinite(differences)]
+  scripts\analyze_economic_robustness.py:78:
+  scripts\analyze_economic_robustness.py:79:    mean, ci_low, ci_high = bootstrap_mean_ci(differences, rng)
+  scripts\analyze_economic_robustness.py:80:    win, win_low, win_high = bootstrap_share_ci(differences > 0, rng)
+  scripts\analyze_economic_robustness.py:81:    tie_share = (
+  scripts\analyze_economic_robustness.py:82:        float(np.mean(differences == 0) * 100)
+  scripts\analyze_ppo_training.py:132:    }
+  scripts\analyze_ppo_training.py:133:
+  scripts\analyze_ppo_training.py:134:    for name, values in arrays.items():
+  scripts\analyze_ppo_training.py:135:        print(
+  scripts\analyze_ppo_training.py:136:            f"{name:16s}: "
+> scripts\analyze_ppo_training.py:137:            f"{'PASS' if np.isfinite(values).all() else 'FAIL'}"
+  scripts\analyze_ppo_training.py:138:        )
+  scripts\analyze_ppo_training.py:139:
+  scripts\analyze_ppo_training.py:140:    print("\n" + "=" * 65)
+  scripts\analyze_ppo_training.py:141:    print("PPO DIAGNOSTICS COMPLETE")
+  scripts\analyze_ppo_training.py:142:    print("=" * 65)
+  scripts\audit_neorl_source_policy_actions.py:22:    return source,adapter
+  scripts\audit_neorl_source_policy_actions.py:23:
+  scripts\audit_neorl_source_policy_actions.py:24:def load_data():
+  scripts\audit_neorl_source_policy_actions.py:25:    d=PROJECT_ROOT/"data/processed/state"
+  scripts\audit_neorl_source_policy_actions.py:26:    states=np.load(d/"state.npy").astype(np.float32)
+> scripts\audit_neorl_source_policy_actions.py:27:    rows=np.load(d/"state_row_indices.npy").astype(np.int64)
+  scripts\audit_neorl_source_policy_actions.py:28:    products=pd.read_parquet(PROJECT_ROOT/"data/processed/products_clean.parquet")
+  scripts\audit_neorl_source_policy_actions.py:29:    months=pd.to_numeric(products.iloc[rows]["MonthNum"],errors="coerce").to_numpy()
+  scripts\audit_neorl_source_policy_actions.py:30:    return states,(
+> scripts\audit_neorl_source_policy_actions.py:31:        np.isfinite(months)&(months<=6),
+> scripts\audit_neorl_source_policy_actions.py:32:        np.isfinite(months)&(months>=7)&(months<=8),
+> scripts\audit_neorl_source_policy_actions.py:33:        np.isfinite(months)&(months>=9)&(months<=10)
+  scripts\audit_neorl_source_policy_actions.py:34:    )
+  scripts\audit_neorl_source_policy_actions.py:35:
+  scripts\audit_neorl_source_policy_actions.py:36:def stats(name,x):
+  scripts\audit_neorl_source_policy_actions.py:37:    x=np.asarray(x).reshape(-1)
+  scripts\audit_neorl_source_policy_actions.py:38:    return {"mean":float(x.mean()),"std":float(x.std()),"min":float(x.min()),
+  scripts\audit_test_results.py:37:]
+  scripts\audit_test_results.py:38:
+  scripts\audit_test_results.py:39:for col in numeric_cols:
+  scripts\audit_test_results.py:40:    test[col] = pd.to_numeric(test[col], errors="raise")
+  scripts\audit_test_results.py:41:
+> scripts\audit_test_results.py:42:if not np.isfinite(test[numeric_cols].to_numpy()).all():
+  scripts\audit_test_results.py:43:    raise ValueError("Non-finite numerical values found in test rows.")
+  scripts\audit_test_results.py:44:
+  scripts\audit_test_results.py:45:ppo_reward = test["ppo_reward"].mean()
+  scripts\audit_test_results.py:46:oracle_reward = test["oracle_reward"].mean()
+  scripts\audit_test_results.py:47:
+  scripts\audit_transfer_action_mapping.py:459:        f"    pseudo shape = {pseudo_np.shape}"
+  scripts\audit_transfer_action_mapping.py:460:    )
+  scripts\audit_transfer_action_mapping.py:461:
+  scripts\audit_transfer_action_mapping.py:462:    print(
+  scripts\audit_transfer_action_mapping.py:463:        "    finite = "
+> scripts\audit_transfer_action_mapping.py:464:        f"{bool(np.all(np.isfinite(pseudo_np)))}"
+  scripts\audit_transfer_action_mapping.py:465:    )
+  scripts\audit_transfer_action_mapping.py:466:
+  scripts\audit_transfer_action_mapping.py:467:    print(
+  scripts\audit_transfer_action_mapping.py:468:        "    pseudo-state means = "
+  scripts\audit_transfer_action_mapping.py:469:        f"{pseudo_np.mean(axis=0)}"
+  scripts\audit_transfer_action_mapping.py:741:        pseudo_np.shape[1] == 4
+  scripts\audit_transfer_action_mapping.py:742:    )
+  scripts\audit_transfer_action_mapping.py:743:
+  scripts\audit_transfer_action_mapping.py:744:    # No invalid numerical values.
+  scripts\audit_transfer_action_mapping.py:745:    assert np.all(
+> scripts\audit_transfer_action_mapping.py:746:        np.isfinite(pseudo_np)
+  scripts\audit_transfer_action_mapping.py:747:    )
+  scripts\audit_transfer_action_mapping.py:748:
+  scripts\audit_transfer_action_mapping.py:749:    assert np.all(
+> scripts\audit_transfer_action_mapping.py:750:        np.isfinite(mean_np)
+  scripts\audit_transfer_action_mapping.py:751:    )
+  scripts\audit_transfer_action_mapping.py:752:
+  scripts\audit_transfer_action_mapping.py:753:    assert np.all(
+> scripts\audit_transfer_action_mapping.py:754:        np.isfinite(std_np)
+  scripts\audit_transfer_action_mapping.py:755:    )
+  scripts\audit_transfer_action_mapping.py:756:
+  scripts\audit_transfer_action_mapping.py:757:    # Adapter output should stay inside its trained source range.
+  scripts\audit_transfer_action_mapping.py:758:    source_min = (
+  scripts\audit_transfer_action_mapping.py:759:        adapter.source_min
+  scripts\build_state.py:14:10-D review sentiment. The public dataset does not provide the
+  scripts\build_state.py:15:required review text/database, so sentiment is intentionally omitted.
+  scripts\build_state.py:16:
+  scripts\build_state.py:17:Image features have already been extracted locally using ResNet-50
+  scripts\build_state.py:18:and are loaded from:
+> scripts\build_state.py:19:    data/processed/features/image_features.npy
+  scripts\build_state.py:20:
+  scripts\build_state.py:21:Rows with unavailable image features are preserved in the master
+  scripts\build_state.py:22:row alignment but marked invalid for complete-state predictor
+  scripts\build_state.py:23:training.
+  scripts\build_state.py:24:"""
+  scripts\build_state.py:50:FEATURE_DIR = "data/processed/features"
+  scripts\build_state.py:51:STATE_DIR = "data/processed/state"
+  scripts\build_state.py:52:
+  scripts\build_state.py:53:TEXT_PATH = os.path.join(FEATURE_DIR, "text_features.npy")
+  scripts\build_state.py:54:ATTRIBUTE_PATH = os.path.join(FEATURE_DIR, "attribute_features.npy")
+> scripts\build_state.py:55:IMAGE_PATH = os.path.join(FEATURE_DIR, "image_features.npy")
+  scripts\build_state.py:56:
+  scripts\build_state.py:57:INDEX_PATH = os.path.join(FEATURE_DIR, "feature_index.parquet")
+  scripts\build_state.py:58:CLEAN_DATA_PATH = "data/processed/products_clean.parquet"
+  scripts\build_state.py:59:
+  scripts\build_state.py:60:
+  scripts\build_state.py:72:
+  scripts\build_state.py:73:    print("\nLoading feature arrays...")
+  scripts\build_state.py:74:
+  scripts\build_state.py:75:    text_features = np.load(TEXT_PATH)
+  scripts\build_state.py:76:    attribute_features = np.load(ATTRIBUTE_PATH)
+> scripts\build_state.py:77:    image_features = np.load(IMAGE_PATH)
+  scripts\build_state.py:78:
+  scripts\build_state.py:79:    print(f"  Text       : {text_features.shape}")
+  scripts\build_state.py:80:    print(f"  Attributes : {attribute_features.shape}")
+> scripts\build_state.py:81:    print(f"  Image      : {image_features.shape}")
+  scripts\build_state.py:82:
+  scripts\build_state.py:83:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:84:    # Basic alignment validation
+  scripts\build_state.py:85:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:86:
+  scripts\build_state.py:91:            "Feature row mismatch: text and attributes have "
+  scripts\build_state.py:92:            f"different row counts: "
+  scripts\build_state.py:93:            f"{len(text_features)} vs {len(attribute_features)}"
+  scripts\build_state.py:94:        )
+  scripts\build_state.py:95:
+> scripts\build_state.py:96:    if len(image_features) != n_rows:
+  scripts\build_state.py:97:        raise ValueError(
+  scripts\build_state.py:98:            "Feature row mismatch: image features contain "
+> scripts\build_state.py:99:            f"{len(image_features)} rows but expected {n_rows}"
+  scripts\build_state.py:100:        )
+  scripts\build_state.py:101:
+  scripts\build_state.py:102:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:103:    # Detect incomplete image rows
+  scripts\build_state.py:104:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:105:
+> scripts\build_state.py:106:    image_valid_mask = np.isfinite(image_features).all(axis=1)
+  scripts\build_state.py:107:
+  scripts\build_state.py:108:    invalid_image_mask = ~image_valid_mask
+  scripts\build_state.py:109:
+  scripts\build_state.py:110:    valid_count = int(image_valid_mask.sum())
+  scripts\build_state.py:111:    invalid_count = int(invalid_image_mask.sum())
+  scripts\build_state.py:135:    # source dataset.
+  scripts\build_state.py:136:
+  scripts\build_state.py:137:    print("\nConstructing 111-D state...")
+  scripts\build_state.py:138:
+  scripts\build_state.py:139:    builder = ItaNetStateBuilder(
+> scripts\build_state.py:140:        image_features=image_features[image_valid_mask],
+  scripts\build_state.py:141:        text_features=text_features[image_valid_mask],
+  scripts\build_state.py:142:        attribute_features=attribute_features[image_valid_mask],
+  scripts\build_state.py:143:        sentiment_features=None,
+  scripts\build_state.py:144:    )
+  scripts\build_state.py:145:
+  scripts\build_state.py:174:
+  scripts\build_state.py:175:    # Preserve source row identity.
+  scripts\build_state.py:176:    valid_row_indices = np.flatnonzero(image_valid_mask)
+  scripts\build_state.py:177:
+  scripts\build_state.py:178:    np.save(
+> scripts\build_state.py:179:        os.path.join(STATE_DIR, "state_row_indices.npy"),
+  scripts\build_state.py:180:        valid_row_indices,
+  scripts\build_state.py:181:    )
+  scripts\build_state.py:182:
+  scripts\build_state.py:183:    print(
+> scripts\build_state.py:184:        f"Saved: {os.path.join(STATE_DIR, 'state_row_indices.npy')}"
+  scripts\build_state.py:185:    )
+  scripts\build_state.py:186:
+  scripts\build_state.py:187:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:188:    # Load source index and cleaned dataset
+  scripts\build_state.py:189:    # ─────────────────────────────────────────────────────────
+  scripts\build_state.py:274:
+  scripts\build_state.py:275:    validity_df = pd.DataFrame(
+  scripts\build_state.py:276:        {
+  scripts\build_state.py:277:            "row_index": np.arange(n_rows),
+  scripts\build_state.py:278:            "ASIN": df_clean["ASIN"].values,
+> scripts\build_state.py:279:            "image_features_valid": image_valid_mask,
+  scripts\build_state.py:280:            "complete_state_valid": image_valid_mask,
+  scripts\build_state.py:281:            "invalid_reason": np.where(image_valid_mask, "None", "Missing Image Feature"),
+  scripts\build_state.py:282:            "split": np.select(
+  scripts\build_state.py:283:                [
+  scripts\build_state.py:284:                    train_mask_all,
+  scripts\build_state_train_only.py:15:CORRECTED_DIR = Path("data/processed/features_train_only")
+  scripts\build_state_train_only.py:16:OUTPUT_DIR = Path("data/processed/state_train_only")
+  scripts\build_state_train_only.py:17:REPORT_DIR = Path("reports")
+  scripts\build_state_train_only.py:18:
+  scripts\build_state_train_only.py:19:TEXT_PATH = FEATURE_DIR / "text_features.npy"
+> scripts\build_state_train_only.py:20:IMAGE_PATH = FEATURE_DIR / "image_features.npy"
+  scripts\build_state_train_only.py:21:ATTRIBUTE_PATH = CORRECTED_DIR / "attribute_features_train_only.npy"
+  scripts\build_state_train_only.py:22:INDEX_PATH = CORRECTED_DIR / "feature_index.parquet"
+  scripts\build_state_train_only.py:23:DATA_PATH = Path("data/processed/products_clean.parquet")
+  scripts\build_state_train_only.py:24:SPLIT_PATH = Path("configs/data_split.yaml")
+  scripts\build_state_train_only.py:25:
+  scripts\build_state_train_only.py:59:    with SPLIT_PATH.open("r", encoding="utf-8-sig") as f:
+  scripts\build_state_train_only.py:60:        split = yaml.safe_load(f)["split"]
+  scripts\build_state_train_only.py:61:
+  scripts\build_state_train_only.py:62:    # Keep only rows with finite image features, matching the existing
+  scripts\build_state_train_only.py:63:    # project's complete-state policy. Record original row indices.
+> scripts\build_state_train_only.py:64:    image_valid = np.isfinite(image).all(axis=1)
+  scripts\build_state_train_only.py:65:    valid_indices = np.flatnonzero(image_valid)
+  scripts\build_state_train_only.py:66:
+> scripts\build_state_train_only.py:67:    if not np.isfinite(text).all():
+  scripts\build_state_train_only.py:68:        raise ValueError("Text features contain non-finite values.")
+> scripts\build_state_train_only.py:69:    if not np.isfinite(attributes).all():
+  scripts\build_state_train_only.py:70:        raise ValueError("Corrected attributes contain non-finite values.")
+  scripts\build_state_train_only.py:71:
+  scripts\build_state_train_only.py:72:    builder = ItaNetStateBuilder(
+> scripts\build_state_train_only.py:73:        image_features=np.asarray(image[image_valid]),
+  scripts\build_state_train_only.py:74:        text_features=np.asarray(text[image_valid]),
+  scripts\build_state_train_only.py:75:        attribute_features=np.asarray(attributes[image_valid]),
+  scripts\build_state_train_only.py:76:        sentiment_features=None,
+  scripts\build_state_train_only.py:77:    )
+  scripts\build_state_train_only.py:78:    state = builder.build()
+  scripts\build_state_train_only.py:79:
+  scripts\build_state_train_only.py:80:    if state.shape != (len(valid_indices), 111):
+  scripts\build_state_train_only.py:81:        raise ValueError(f"Unexpected state shape: {state.shape}")
+> scripts\build_state_train_only.py:82:    if not np.isfinite(state).all():
+  scripts\build_state_train_only.py:83:        raise ValueError("Constructed state contains NaN or Inf.")
+  scripts\build_state_train_only.py:84:
+  scripts\build_state_train_only.py:85:    months = df["MonthNum"].to_numpy()
+  scripts\build_state_train_only.py:86:    train_months = split["train_months"]
+  scripts\build_state_train_only.py:87:    val_months = split["val_months"]
+  scripts\build_state_train_only.py:99:
+  scripts\build_state_train_only.py:100:    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+  scripts\build_state_train_only.py:101:    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+  scripts\build_state_train_only.py:102:
+  scripts\build_state_train_only.py:103:    np.save(OUTPUT_DIR / "state.npy", state)
+> scripts\build_state_train_only.py:104:    np.save(OUTPUT_DIR / "state_row_indices.npy", valid_indices)
+  scripts\build_state_train_only.py:105:    np.save(OUTPUT_DIR / "state_train.npy", state[train_mask])
+  scripts\build_state_train_only.py:106:    np.save(OUTPUT_DIR / "state_val.npy", state[val_mask])
+  scripts\build_state_train_only.py:107:    np.save(OUTPUT_DIR / "state_test.npy", state[test_mask])
+  scripts\build_state_train_only.py:108:
+  scripts\build_state_train_only.py:109:    validity = pd.DataFrame({
+  scripts\build_state_train_only.py:110:        "row_index": np.arange(n),
+  scripts\build_state_train_only.py:111:        "ASIN": df["ASIN"],
+> scripts\build_state_train_only.py:112:        "image_features_finite": image_valid,
+  scripts\build_state_train_only.py:113:        "split": np.select(
+  scripts\build_state_train_only.py:114:            [
+  scripts\build_state_train_only.py:115:                np.isin(months, train_months),
+  scripts\build_state_train_only.py:116:                np.isin(months, val_months),
+  scripts\build_state_train_only.py:117:                np.isin(months, test_months),
+  scripts\build_state_train_only.py:134:        "validation_months": val_months,
+  scripts\build_state_train_only.py:135:        "test_months": test_months,
+  scripts\build_state_train_only.py:136:        "train_state_rows": int(train_mask.sum()),
+  scripts\build_state_train_only.py:137:        "validation_state_rows": int(val_mask.sum()),
+  scripts\build_state_train_only.py:138:        "test_state_rows": int(test_mask.sum()),
+> scripts\build_state_train_only.py:139:        "state_finite": bool(np.isfinite(state).all()),
+  scripts\build_state_train_only.py:140:        "image_embedding_caveat": (
+  scripts\build_state_train_only.py:141:            "448 rows are marked failed in the existing image extraction "
+  scripts\build_state_train_only.py:142:            "status report despite finite vectors; those vectors were "
+  scripts\build_state_train_only.py:143:            "retained provisionally and not independently verified."
+  scripts\build_state_train_only.py:144:        ),
+  scripts\compare_ppo_baselines.py:36:    df = pd.read_parquet(ROOT / "data/processed/products_clean.parquet")
+  scripts\compare_ppo_baselines.py:37:    source_indices = np.asarray(dataset.source_row_indices, dtype=int)
+  scripts\compare_ppo_baselines.py:38:    aligned = df.iloc[source_indices].reset_index(drop=True)
+  scripts\compare_ppo_baselines.py:39:    states = np.asarray(dataset.states, dtype=np.float32)
+  scripts\compare_ppo_baselines.py:40:
+> scripts\compare_ppo_baselines.py:41:    if states.shape != (len(aligned), 111) or not np.isfinite(states).all():
+  scripts\compare_ppo_baselines.py:42:        raise ValueError("State shape, alignment, or finite-value validation failed.")
+  scripts\compare_ppo_baselines.py:43:
+  scripts\compare_ppo_baselines.py:44:    test_positions = np.flatnonzero(aligned["MonthNum"].between(9, 10).to_numpy())
+  scripts\compare_ppo_baselines.py:45:    train_positions = np.flatnonzero(aligned["MonthNum"].between(1, 6).to_numpy())
+  scripts\compare_ppo_baselines.py:46:    if len(test_positions) != 7139:
+  scripts\compare_ppo_baselines.py:78:        state = states[position]
+  scripts\compare_ppo_baselines.py:79:        env.reset(state=state, product=product)
+  scripts\compare_ppo_baselines.py:80:
+  scripts\compare_ppo_baselines.py:81:        baseline_sales = float(product.last_monthly_sales)
+  scripts\compare_ppo_baselines.py:82:        baseline_margin = env.observed_outcome.estimated_margin
+> scripts\compare_ppo_baselines.py:83:        if baseline_margin is None or not np.isfinite(baseline_margin):
+  scripts\compare_ppo_baselines.py:84:            continue
+  scripts\compare_ppo_baselines.py:85:
+  scripts\compare_ppo_baselines.py:86:        def metrics(env_action):
+  scripts\compare_ppo_baselines.py:87:            outcome = env.predict_action(int(env_action))
+  scripts\compare_ppo_baselines.py:88:            if outcome.estimated_margin is None:
+  scripts\compare_ppo_baselines.py:111:        fixed10 = metrics(2)
+  scripts\compare_ppo_baselines.py:112:        fixed20 = metrics(4)
+  scripts\compare_ppo_baselines.py:113:        fixed30 = metrics(6)
+  scripts\compare_ppo_baselines.py:114:
+  scripts\compare_ppo_baselines.py:115:        candidates = [(d, metrics(i + 1)) for i, d in enumerate(DISCOUNTS)]
+> scripts\compare_ppo_baselines.py:116:        candidates = [(d, m) for d, m in candidates if m is not None and np.isfinite(m["reward"])]
+  scripts\compare_ppo_baselines.py:117:        if not candidates:
+  scripts\compare_ppo_baselines.py:118:            continue
+  scripts\compare_ppo_baselines.py:119:        oracle_discount, oracle_result = max(candidates, key=lambda pair: pair[1]["reward"])
+  scripts\compare_ppo_baselines.py:120:
+  scripts\compare_ppo_baselines.py:121:        results = {
+  scripts\diagnose_image_features.py:8:    print("=" * 65)
+  scripts\diagnose_image_features.py:9:    print("IMAGE FEATURE DIAGNOSTICS")
+  scripts\diagnose_image_features.py:10:    print("=" * 65)
+  scripts\diagnose_image_features.py:11:
+  scripts\diagnose_image_features.py:12:    matches = [
+> scripts\diagnose_image_features.py:13:        p for p in ROOT.rglob("image_features.npy")
+  scripts\diagnose_image_features.py:14:        if ".venv" not in p.parts
+  scripts\diagnose_image_features.py:15:        and ".git" not in p.parts
+  scripts\diagnose_image_features.py:16:        and "__pycache__" not in p.parts
+  scripts\diagnose_image_features.py:17:    ]
+  scripts\diagnose_image_features.py:18:
+  scripts\diagnose_image_features.py:19:    if not matches:
+> scripts\diagnose_image_features.py:20:        print("[FAIL] No image_features.npy found.")
+  scripts\diagnose_image_features.py:21:        return
+  scripts\diagnose_image_features.py:22:
+  scripts\diagnose_image_features.py:23:    index_matches = [
+> scripts\diagnose_image_features.py:24:        p for p in ROOT.rglob("state_row_indices.npy")
+  scripts\diagnose_image_features.py:25:        if ".venv" not in p.parts
+  scripts\diagnose_image_features.py:26:        and ".git" not in p.parts
+  scripts\diagnose_image_features.py:27:        and "__pycache__" not in p.parts
+  scripts\diagnose_image_features.py:28:    ]
+  scripts\diagnose_image_features.py:29:    index_path = index_matches[0] if index_matches else None
+  scripts\diagnose_image_features.py:30:
+  scripts\diagnose_image_features.py:31:    if index_path is None:
+> scripts\diagnose_image_features.py:32:        print("[INFO] state_row_indices.npy was not found.")
+  scripts\diagnose_image_features.py:33:
+  scripts\diagnose_image_features.py:34:    for path in matches:
+  scripts\diagnose_image_features.py:35:        print(f"\nFile: {path.relative_to(ROOT)}")
+  scripts\diagnose_image_features.py:36:
+  scripts\diagnose_image_features.py:37:        features = np.load(path, mmap_mode="r", allow_pickle=False)
+> scripts\diagnose_image_features.py:38:        finite_mask = np.isfinite(features)
+  scripts\diagnose_image_features.py:39:
+  scripts\diagnose_image_features.py:40:        print(f"Shape: {features.shape}")
+  scripts\diagnose_image_features.py:41:        print(f"Dtype: {features.dtype}")
+  scripts\diagnose_image_features.py:42:        print(f"Total values: {features.size:,}")
+  scripts\diagnose_image_features.py:43:        print(f"Finite values: {finite_mask.sum():,}")
+  scripts\diagnose_ppo_robustness.py:42:    test_positions = np.flatnonzero(
+  scripts\diagnose_ppo_robustness.py:43:        aligned["MonthNum"].between(9, 10).to_numpy()
+  scripts\diagnose_ppo_robustness.py:44:    )
+  scripts\diagnose_ppo_robustness.py:45:    states = np.asarray(dataset.states[test_positions], dtype=np.float32)
+  scripts\diagnose_ppo_robustness.py:46:
+> scripts\diagnose_ppo_robustness.py:47:    if states.shape[1] != 111 or not np.isfinite(states).all():
+  scripts\diagnose_ppo_robustness.py:48:        raise ValueError(f"Unexpected or invalid state array: {states.shape}")
+  scripts\diagnose_ppo_robustness.py:49:
+  scripts\diagnose_ppo_robustness.py:50:    agent = PPOAgent(state_dim=111, action_dim=9)
+  scripts\diagnose_ppo_robustness.py:51:    agent.actor.load_state_dict(checkpoint["actor_state_dict"])
+  scripts\diagnose_ppo_robustness.py:52:    agent.actor.eval()
+  scripts\diagnose_ppo_state_sensitivity.py:92:    print(f"  Mean distance from average policy: {distances.mean():.6f}")
+  scripts\diagnose_ppo_state_sensitivity.py:93:    print(f"  Maximum distance from average policy: {distances.max():.6f}")
+  scripts\diagnose_ppo_state_sensitivity.py:94:
+  scripts\diagnose_ppo_state_sensitivity.py:95:    print("\nValidity checks:")
+  scripts\diagnose_ppo_state_sensitivity.py:96:    print(f"  Probabilities sum to 1: {np.allclose(probs.sum(axis=1), 1.0, atol=1e-5)}")
+> scripts\diagnose_ppo_state_sensitivity.py:97:    print(f"  All probabilities finite: {np.isfinite(probs).all()}")
+  scripts\diagnose_ppo_state_sensitivity.py:98:    print(f"  All selected discounts valid: {set(result['selected_discount']).issubset(DISCOUNTS)}")
+  scripts\diagnose_ppo_state_sensitivity.py:99:
+  scripts\diagnose_ppo_state_sensitivity.py:100:if __name__ == "__main__":
+  scripts\diagnose_ppo_state_sensitivity.py:101:    main()
+  scripts\diagnose_ppo_transfer_robustness.py:45:
+  scripts\diagnose_ppo_transfer_robustness.py:46:    if states_all.shape != (len(aligned), 111):
+  scripts\diagnose_ppo_transfer_robustness.py:47:        raise ValueError(
+  scripts\diagnose_ppo_transfer_robustness.py:48:            f"State/data alignment mismatch: {states_all.shape}, {len(aligned)}"
+  scripts\diagnose_ppo_transfer_robustness.py:49:        )
+> scripts\diagnose_ppo_transfer_robustness.py:50:    if not np.isfinite(states_all).all():
+  scripts\diagnose_ppo_transfer_robustness.py:51:        raise ValueError("Dataset states contain non-finite values")
+  scripts\diagnose_ppo_transfer_robustness.py:52:
+  scripts\diagnose_ppo_transfer_robustness.py:53:    train_mask = aligned["MonthNum"].between(1, 6).to_numpy()
+  scripts\diagnose_ppo_transfer_robustness.py:54:    test_mask = aligned["MonthNum"].between(9, 10).to_numpy()
+  scripts\diagnose_ppo_transfer_robustness.py:55:    train_states = states_all[train_mask]
+  scripts\diagnose_sales_predictor.py:48:# ============================================================
+  scripts\diagnose_sales_predictor.py:49:# CONFIG
+  scripts\diagnose_sales_predictor.py:50:# ============================================================
+  scripts\diagnose_sales_predictor.py:51:
+  scripts\diagnose_sales_predictor.py:52:STATE_PATH = "data/processed/state/state.npy"
+> scripts\diagnose_sales_predictor.py:53:STATE_INDEX_PATH = "data/processed/state/state_row_indices.npy"
+  scripts\diagnose_sales_predictor.py:54:DATA_PATH = "data/processed/products_clean.parquet"
+  scripts\diagnose_sales_predictor.py:55:
+  scripts\diagnose_sales_predictor.py:56:CHECKPOINT_DIR = "models/sales_predictor"
+  scripts\diagnose_sales_predictor.py:57:
+  scripts\diagnose_sales_predictor.py:58:DISCOUNTS = [5, 10, 15, 20, 25, 30, 35, 40]
+  scripts\diagnose_sales_predictor.py:94:
+  scripts\diagnose_sales_predictor.py:95:# ============================================================
+  scripts\diagnose_sales_predictor.py:96:# TARGET
+  scripts\diagnose_sales_predictor.py:97:# ============================================================
+  scripts\diagnose_sales_predictor.py:98:
+> scripts\diagnose_sales_predictor.py:99:target_col = "Estimated Monthly Sales Growth Rate"
+  scripts\diagnose_sales_predictor.py:100:
+  scripts\diagnose_sales_predictor.py:101:y = (
+  scripts\diagnose_sales_predictor.py:102:    pd.to_numeric(df[target_col], errors="coerce")
+  scripts\diagnose_sales_predictor.py:103:    .fillna(0.0)
+  scripts\diagnose_sales_predictor.py:104:    .astype(np.float32)
+  scripts\diagnose_sales_predictor.py:207:        all_predictions.append(pred.cpu().numpy())
+  scripts\diagnose_sales_predictor.py:208:
+  scripts\diagnose_sales_predictor.py:209:predictions = np.concatenate(all_predictions)
+  scripts\diagnose_sales_predictor.py:210:
+  scripts\diagnose_sales_predictor.py:211:assert len(predictions) == len(y)
+> scripts\diagnose_sales_predictor.py:212:assert np.all(np.isfinite(predictions))
+  scripts\diagnose_sales_predictor.py:213:
+  scripts\diagnose_sales_predictor.py:214:print(f"Predictions generated: {len(predictions)}")
+  scripts\diagnose_sales_predictor.py:215:
+  scripts\diagnose_sales_predictor.py:216:
+  scripts\diagnose_sales_predictor.py:217:# ============================================================
+  scripts\evaluate_policy_distillation.py:24:
+  scripts\evaluate_policy_distillation.py:25:def load_states():
+  scripts\evaluate_policy_distillation.py:26:    state_dir = PROJECT_ROOT / "data/processed/state"
+  scripts\evaluate_policy_distillation.py:27:
+  scripts\evaluate_policy_distillation.py:28:    states = np.load(state_dir / "state.npy").astype(np.float32)
+> scripts\evaluate_policy_distillation.py:29:    rows = np.load(state_dir / "state_row_indices.npy").astype(np.int64)
+  scripts\evaluate_policy_distillation.py:30:
+  scripts\evaluate_policy_distillation.py:31:    return states, rows
+  scripts\evaluate_policy_distillation.py:32:
+  scripts\evaluate_policy_distillation.py:33:
+  scripts\evaluate_policy_distillation.py:34:def load_products():
+  scripts\evaluate_policy_distillation.py:82:    months = pd.to_numeric(
+  scripts\evaluate_policy_distillation.py:83:        aligned["MonthNum"],
+  scripts\evaluate_policy_distillation.py:84:        errors="coerce",
+  scripts\evaluate_policy_distillation.py:85:    ).to_numpy()
+  scripts\evaluate_policy_distillation.py:86:
+> scripts\evaluate_policy_distillation.py:87:    valid = np.isfinite(months)
+  scripts\evaluate_policy_distillation.py:88:
+  scripts\evaluate_policy_distillation.py:89:    train_mask = (
+  scripts\evaluate_policy_distillation.py:90:        valid
+  scripts\evaluate_policy_distillation.py:91:        & (months >= 1)
+  scripts\evaluate_policy_distillation.py:92:        & (months <= 6)
+  scripts\evaluate_ppo.py:891:        "ppo_delta_margin",
+  scripts\evaluate_ppo.py:892:        "ppo_relative_delta_quantity",
+  scripts\evaluate_ppo.py:893:        "ppo_relative_delta_margin",
+  scripts\evaluate_ppo.py:894:    ]
+  scripts\evaluate_ppo.py:895:
+> scripts\evaluate_ppo.py:896:    finite = np.isfinite(
+  scripts\evaluate_ppo.py:897:        results_df[
+  scripts\evaluate_ppo.py:898:            numeric_columns
+  scripts\evaluate_ppo.py:899:        ].to_numpy()
+  scripts\evaluate_ppo.py:900:    ).all()
+  scripts\evaluate_ppo.py:901:
+  scripts\evaluate_ppo_economic_robustness.py:62:        and abs(baseline.estimated_margin) > 1e-12
+  scripts\evaluate_ppo_economic_robustness.py:63:        else np.nan
+  scripts\evaluate_ppo_economic_robustness.py:64:    )
+  scripts\evaluate_ppo_economic_robustness.py:65:    reward = (
+  scripts\evaluate_ppo_economic_robustness.py:66:        calculate_reward(delta_margin, delta_quantity, SALES_REWARD)
+> scripts\evaluate_ppo_economic_robustness.py:67:        if np.isfinite(delta_margin) and np.isfinite(delta_quantity)
+  scripts\evaluate_ppo_economic_robustness.py:68:        else np.nan
+  scripts\evaluate_ppo_economic_robustness.py:69:    )
+  scripts\evaluate_ppo_economic_robustness.py:70:
+  scripts\evaluate_ppo_economic_robustness.py:71:    return {
+  scripts\evaluate_ppo_economic_robustness.py:72:        "discount_percent": int(discount),
+  scripts\evaluate_ppo_economic_robustness.py:96:    if checkpoint.get("state_dim") != 111 or checkpoint.get("action_dim") != 9:
+  scripts\evaluate_ppo_economic_robustness.py:97:        raise ValueError("Expected a 111-state, 9-action checkpoint.")
+  scripts\evaluate_ppo_economic_robustness.py:98:
+  scripts\evaluate_ppo_economic_robustness.py:99:    dataset = load_ppo_dataset(
+  scripts\evaluate_ppo_economic_robustness.py:100:        state_path=ROOT / "data/processed/state/state.npy",
+> scripts\evaluate_ppo_economic_robustness.py:101:        index_path=ROOT / "data/processed/state/state_row_indices.npy",
+  scripts\evaluate_ppo_economic_robustness.py:102:        products_path=PRODUCTS,
+  scripts\evaluate_ppo_economic_robustness.py:103:    )
+  scripts\evaluate_ppo_economic_robustness.py:104:    products_df = pd.read_parquet(PRODUCTS)
+  scripts\evaluate_ppo_economic_robustness.py:105:    aligned = products_df.iloc[dataset.source_row_indices].reset_index(drop=True)
+  scripts\evaluate_ppo_economic_robustness.py:106:
+  scripts\evaluate_ppo_rankings.py:5:EVAL_PATH = (
+  scripts\evaluate_ppo_rankings.py:6:    "models/ppo_transfer/"
+  scripts\evaluate_ppo_rankings.py:7:    "transfer_supported_8action_policy_evaluation.csv"
+  scripts\evaluate_ppo_rankings.py:8:)
+  scripts\evaluate_ppo_rankings.py:9:PRODUCTS_PATH = "data/processed/products_clean.parquet"
+> scripts\evaluate_ppo_rankings.py:10:STATE_INDICES_PATH = "data/processed/state/state_row_indices.npy"
+  scripts\evaluate_ppo_rankings.py:11:
+  scripts\evaluate_ppo_rankings.py:12:
+  scripts\evaluate_ppo_rankings.py:13:def main():
+  scripts\evaluate_ppo_rankings.py:14:    evaluation = pd.read_csv(EVAL_PATH)
+  scripts\evaluate_ppo_rankings.py:15:    products = pd.read_parquet(PRODUCTS_PATH)
+  scripts\evaluate_ppo_reproduction.py:60:    actor.load_state_dict(checkpoint["actor_state_dict"])
+  scripts\evaluate_ppo_reproduction.py:61:    actor.eval()
+  scripts\evaluate_ppo_reproduction.py:62:
+  scripts\evaluate_ppo_reproduction.py:63:    dataset = load_ppo_dataset(
+  scripts\evaluate_ppo_reproduction.py:64:        state_path=ROOT / "data/processed/state/state.npy",
+> scripts\evaluate_ppo_reproduction.py:65:        index_path=ROOT / "data/processed/state/state_row_indices.npy",
+  scripts\evaluate_ppo_reproduction.py:66:        products_path=PRODUCTS,
+  scripts\evaluate_ppo_reproduction.py:67:    )
+  scripts\evaluate_ppo_reproduction.py:68:
+  scripts\evaluate_ppo_reproduction.py:69:    products_df = pd.read_parquet(PRODUCTS)
+  scripts\evaluate_ppo_reproduction.py:70:    aligned = products_df.iloc[dataset.source_row_indices].reset_index(drop=True)
+  scripts\evaluate_ppo_reproduction.py:143:                else np.nan
+  scripts\evaluate_ppo_reproduction.py:144:            )
+  scripts\evaluate_ppo_reproduction.py:145:
+  scripts\evaluate_ppo_reproduction.py:146:            reward = (
+  scripts\evaluate_ppo_reproduction.py:147:                calculate_reward(delta_margin, delta_quantity, SALES_REWARD)
+> scripts\evaluate_ppo_reproduction.py:148:                if np.isfinite(delta_margin) and np.isfinite(delta_quantity)
+  scripts\evaluate_ppo_reproduction.py:149:                else np.nan
+  scripts\evaluate_ppo_reproduction.py:150:            )
+  scripts\evaluate_ppo_reproduction.py:151:
+  scripts\evaluate_ppo_reproduction.py:152:            row = {
+  scripts\evaluate_ppo_reproduction.py:153:                "test_position": i,
+  scripts\evaluate_ppo_statistics.py:25:
+  scripts\evaluate_ppo_statistics.py:26:
+  scripts\evaluate_ppo_statistics.py:27:def bootstrap_mean_ci(values, rng):
+  scripts\evaluate_ppo_statistics.py:28:    """Percentile bootstrap CI for a sample mean."""
+  scripts\evaluate_ppo_statistics.py:29:    values = np.asarray(values, dtype=float)
+> scripts\evaluate_ppo_statistics.py:30:    values = values[np.isfinite(values)]
+  scripts\evaluate_ppo_statistics.py:31:
+  scripts\evaluate_ppo_statistics.py:32:    if len(values) == 0:
+  scripts\evaluate_ppo_statistics.py:33:        return np.nan, np.nan, np.nan
+  scripts\evaluate_ppo_statistics.py:34:
+  scripts\evaluate_ppo_statistics.py:35:    estimates = np.empty(N_BOOTSTRAP)
+  scripts\evaluate_ppo_statistics.py:52:    (mean PPO / mean baseline - 1) * 100.
+  scripts\evaluate_ppo_statistics.py:53:    """
+  scripts\evaluate_ppo_statistics.py:54:    ppo = np.asarray(ppo, dtype=float)
+  scripts\evaluate_ppo_statistics.py:55:    baseline = np.asarray(baseline, dtype=float)
+  scripts\evaluate_ppo_statistics.py:56:    valid = (
+> scripts\evaluate_ppo_statistics.py:57:        np.isfinite(ppo)
+> scripts\evaluate_ppo_statistics.py:58:        & np.isfinite(baseline)
+  scripts\evaluate_ppo_statistics.py:59:    )
+  scripts\evaluate_ppo_statistics.py:60:    ppo = ppo[valid]
+  scripts\evaluate_ppo_statistics.py:61:    baseline = baseline[valid]
+  scripts\evaluate_ppo_statistics.py:62:
+  scripts\evaluate_ppo_statistics.py:63:    if len(ppo) == 0 or np.isclose(baseline.mean(), 0):
+  scripts\evaluate_ppo_statistics.py:77:            np.abs(b_mean) > 1e-12,
+  scripts\evaluate_ppo_statistics.py:78:            (p_mean / b_mean - 1) * 100,
+  scripts\evaluate_ppo_statistics.py:79:            np.nan,
+  scripts\evaluate_ppo_statistics.py:80:        )
+  scripts\evaluate_ppo_statistics.py:81:
+> scripts\evaluate_ppo_statistics.py:82:    estimates = estimates[np.isfinite(estimates)]
+  scripts\evaluate_ppo_statistics.py:83:    lower, upper = np.quantile(
+  scripts\evaluate_ppo_statistics.py:84:        estimates, [alpha / 2, 1 - alpha / 2]
+  scripts\evaluate_ppo_statistics.py:85:    )
+  scripts\evaluate_ppo_statistics.py:86:    return point, lower, upper
+  scripts\evaluate_ppo_statistics.py:87:
+  scripts\evaluate_ppo_statistics.py:116:for metric in metrics:
+  scripts\evaluate_ppo_statistics.py:117:    label = metric["label"]
+  scripts\evaluate_ppo_statistics.py:118:    ppo = test[metric["ppo"]].to_numpy(dtype=float)
+  scripts\evaluate_ppo_statistics.py:119:    baseline = test[metric["baseline"]].to_numpy(dtype=float)
+  scripts\evaluate_ppo_statistics.py:120:
+> scripts\evaluate_ppo_statistics.py:121:    valid = np.isfinite(ppo) & np.isfinite(baseline)
+  scripts\evaluate_ppo_statistics.py:122:    ppo = ppo[valid]
+  scripts\evaluate_ppo_statistics.py:123:    baseline = baseline[valid]
+  scripts\evaluate_ppo_statistics.py:124:
+  scripts\evaluate_ppo_statistics.py:125:    # Paired differences: each PPO outcome is compared with
+  scripts\evaluate_ppo_statistics.py:126:    # the baseline outcome for the same test row.
+  scripts\evaluate_ppo_transfer.py:919:        "ppo_delta_margin",
+  scripts\evaluate_ppo_transfer.py:920:        "ppo_relative_delta_quantity",
+  scripts\evaluate_ppo_transfer.py:921:        "ppo_relative_delta_margin",
+  scripts\evaluate_ppo_transfer.py:922:    ]
+  scripts\evaluate_ppo_transfer.py:923:
+> scripts\evaluate_ppo_transfer.py:924:    finite = np.isfinite(
+  scripts\evaluate_ppo_transfer.py:925:        results_df[
+  scripts\evaluate_ppo_transfer.py:926:            numeric_columns
+  scripts\evaluate_ppo_transfer.py:927:        ].to_numpy()
+  scripts\evaluate_ppo_transfer.py:928:    ).all()
+  scripts\evaluate_ppo_transfer.py:929:
+  scripts\evaluate_ppo_transfer_robustness.py:39:    aligned = df.iloc[source_indices].reset_index(drop=True)
+  scripts\evaluate_ppo_transfer_robustness.py:40:    states = np.asarray(dataset.states, dtype=np.float32)
+  scripts\evaluate_ppo_transfer_robustness.py:41:
+  scripts\evaluate_ppo_transfer_robustness.py:42:    if states.shape != (len(dataset.products), 111) or len(states) != len(aligned):
+  scripts\evaluate_ppo_transfer_robustness.py:43:        raise ValueError("Dataset state/product alignment check failed.")
+> scripts\evaluate_ppo_transfer_robustness.py:44:    if not np.isfinite(states).all():
+  scripts\evaluate_ppo_transfer_robustness.py:45:        raise ValueError("States contain NaN or infinity.")
+  scripts\evaluate_ppo_transfer_robustness.py:46:
+  scripts\evaluate_ppo_transfer_robustness.py:47:    train_mask = aligned["MonthNum"].between(1, 6).to_numpy()
+  scripts\evaluate_ppo_transfer_robustness.py:48:    test_positions = np.flatnonzero(aligned["MonthNum"].between(9, 10).to_numpy())
+  scripts\evaluate_ppo_transfer_robustness.py:49:    if not train_mask.any() or not len(test_positions):
+  scripts\evaluate_ppo_transfer_robustness.py:84:        product = dataset.products[position]
+  scripts\evaluate_ppo_transfer_robustness.py:85:        environment.reset(state=state, product=product)
+  scripts\evaluate_ppo_transfer_robustness.py:86:
+  scripts\evaluate_ppo_transfer_robustness.py:87:        baseline_sales = float(product.last_monthly_sales)
+  scripts\evaluate_ppo_transfer_robustness.py:88:        baseline_margin = environment.observed_outcome.estimated_margin
+> scripts\evaluate_ppo_transfer_robustness.py:89:        if baseline_margin is None or not np.isfinite(baseline_margin):
+  scripts\evaluate_ppo_transfer_robustness.py:90:            continue
+  scripts\evaluate_ppo_transfer_robustness.py:91:
+  scripts\evaluate_ppo_transfer_robustness.py:92:        def score(outcome):
+  scripts\evaluate_ppo_transfer_robustness.py:93:            delta_q = outcome.estimated_sales - baseline_sales
+  scripts\evaluate_ppo_transfer_robustness.py:94:            delta_m = outcome.estimated_margin - baseline_margin
+  scripts\evaluate_ppo_transfer_robustness.py:102:        oracle_candidates = []
+  scripts\evaluate_ppo_transfer_robustness.py:103:        for env_action, outcome in environment.predict_all_actions().items():
+  scripts\evaluate_ppo_transfer_robustness.py:104:            if env_action == 0 or outcome.estimated_margin is None:
+  scripts\evaluate_ppo_transfer_robustness.py:105:                continue
+  scripts\evaluate_ppo_transfer_robustness.py:106:            r, q, m = score(outcome)
+> scripts\evaluate_ppo_transfer_robustness.py:107:            if np.isfinite(r) and np.isfinite(q) and np.isfinite(m):
+  scripts\evaluate_ppo_transfer_robustness.py:108:                oracle_candidates.append((r, env_action, q, m))
+  scripts\evaluate_ppo_transfer_robustness.py:109:        if not oracle_candidates:
+  scripts\evaluate_ppo_transfer_robustness.py:110:            continue
+  scripts\evaluate_ppo_transfer_robustness.py:111:        oracle_reward, oracle_env_action, oracle_sales, oracle_margin = max(
+  scripts\evaluate_ppo_transfer_robustness.py:112:            oracle_candidates, key=lambda x: x[0]
+  scripts\evaluate_transfer_adapter.py:61:
+  scripts\evaluate_transfer_adapter.py:62:
+  scripts\evaluate_transfer_adapter.py:63:def load_split() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+  scripts\evaluate_transfer_adapter.py:64:    state_dir = PROJECT_ROOT / "data" / "processed" / "state"
+  scripts\evaluate_transfer_adapter.py:65:    states = np.load(state_dir / "state.npy").astype(np.float32)
+> scripts\evaluate_transfer_adapter.py:66:    row_indices = np.load(state_dir / "state_row_indices.npy").astype(np.int64)
+  scripts\evaluate_transfer_adapter.py:67:
+  scripts\evaluate_transfer_adapter.py:68:    df = load_products(find_products_file())
+  scripts\evaluate_transfer_adapter.py:69:    discount_col = find_column(df, ["Discount"])
+  scripts\evaluate_transfer_adapter.py:70:    month_col = find_column(df, ["MonthNum", "Deal Month", "Month"])
+  scripts\evaluate_transfer_adapter.py:71:
+  scripts\evaluate_transfer_adapter.py:75:        errors="coerce",
+  scripts\evaluate_transfer_adapter.py:76:    ).to_numpy(np.float32)
+  scripts\evaluate_transfer_adapter.py:77:    months = pd.to_numeric(selected[month_col], errors="coerce").to_numpy(np.float32)
+  scripts\evaluate_transfer_adapter.py:78:
+  scripts\evaluate_transfer_adapter.py:79:    valid = (
+> scripts\evaluate_transfer_adapter.py:80:        np.isfinite(states).all(axis=1)
+> scripts\evaluate_transfer_adapter.py:81:        & np.isfinite(discounts)
+> scripts\evaluate_transfer_adapter.py:82:        & np.isfinite(months)
+  scripts\evaluate_transfer_adapter.py:83:        & (discounts >= 0)
+  scripts\evaluate_transfer_adapter.py:84:        & (discounts <= 40)
+  scripts\evaluate_transfer_adapter.py:85:    )
+  scripts\evaluate_transfer_adapter.py:86:
+  scripts\evaluate_transfer_adapter.py:87:    train = valid & (months >= 1) & (months <= 6)
+  scripts\evaluate_uncertainty_aware_pricing.py:180:        predictor, states[val_positions], args.mc_samples, args.batch_size, args.seed + 100
+  scripts\evaluate_uncertainty_aware_pricing.py:181:    )
+  scripts\evaluate_uncertainty_aware_pricing.py:182:    val_mean = val_growth.mean(axis=0)
+  scripts\evaluate_uncertainty_aware_pricing.py:183:    val_std = val_growth.std(axis=0, ddof=1)
+  scripts\evaluate_uncertainty_aware_pricing.py:184:    actual_growth = pd.to_numeric(
+> scripts\evaluate_uncertainty_aware_pricing.py:185:        aligned.iloc[val_positions]["Estimated Monthly Sales Growth Rate"], errors="coerce"
+  scripts\evaluate_uncertainty_aware_pricing.py:186:    ).to_numpy(dtype=float)
+  scripts\evaluate_uncertainty_aware_pricing.py:187:    observed_discounts = pd.to_numeric(
+  scripts\evaluate_uncertainty_aware_pricing.py:188:        aligned.iloc[val_positions]["Discount"], errors="coerce"
+  scripts\evaluate_uncertainty_aware_pricing.py:189:    ).to_numpy(dtype=float)
+  scripts\evaluate_uncertainty_aware_pricing.py:190:    discount_index = {int(discount): i for i, discount in enumerate(DISCOUNTS)}
+  scripts\evaluate_uncertainty_aware_pricing.py:191:    calibration_rows = []
+  scripts\evaluate_uncertainty_aware_pricing.py:192:
+  scripts\evaluate_uncertainty_aware_pricing.py:193:    for local_i, source_position in enumerate(val_positions):
+  scripts\evaluate_uncertainty_aware_pricing.py:194:        discount = observed_discounts[local_i]
+  scripts\evaluate_uncertainty_aware_pricing.py:195:        actual = actual_growth[local_i]
+> scripts\evaluate_uncertainty_aware_pricing.py:196:        if not np.isfinite(discount) or not np.isfinite(actual) or not discount.is_integer():
+  scripts\evaluate_uncertainty_aware_pricing.py:197:            continue
+  scripts\evaluate_uncertainty_aware_pricing.py:198:        action = discount_index.get(int(discount))
+  scripts\evaluate_uncertainty_aware_pricing.py:199:        if action is None:
+  scripts\evaluate_uncertainty_aware_pricing.py:200:            continue
+  scripts\evaluate_uncertainty_aware_pricing.py:201:        mean_prediction = float(val_mean[local_i, action])
+  scripts\extract_attributes_train_only.py:80:        raise ValueError(
+  scripts\extract_attributes_train_only.py:81:            f"Training-fitted preprocessing produced {features.shape[1]} "
+  scripts\extract_attributes_train_only.py:82:            f"dimensions, but the existing state expects {EXPECTED_DIM}. "
+  scripts\extract_attributes_train_only.py:83:            "No projection or existing-file overwrite was performed."
+  scripts\extract_attributes_train_only.py:84:        )
+> scripts\extract_attributes_train_only.py:85:    if not np.isfinite(features).all():
+  scripts\extract_attributes_train_only.py:86:        raise ValueError("Generated attributes contain NaN or Inf.")
+  scripts\extract_attributes_train_only.py:87:
+  scripts\extract_attributes_train_only.py:88:    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+  scripts\extract_attributes_train_only.py:89:    np.save(OUTPUT_PATH, features)
+  scripts\extract_attributes_train_only.py:90:    df[["ASIN"]].to_parquet(INDEX_PATH, index=False)
+  scripts\extract_image_features.py:13:# Configuration
+  scripts\extract_image_features.py:14:# ============================================================
+  scripts\extract_image_features.py:15:
+  scripts\extract_image_features.py:16:MANIFEST_PATH = "data/processed/images/image_manifest.csv"
+  scripts\extract_image_features.py:17:OUTPUT_DIR = "data/processed/features"
+> scripts\extract_image_features.py:18:FEATURE_PATH = os.path.join(OUTPUT_DIR, "image_features.npy")
+  scripts\extract_image_features.py:19:STATUS_PATH = os.path.join(OUTPUT_DIR, "image_feature_status.csv")
+  scripts\extract_image_features.py:20:
+  scripts\extract_image_features.py:21:BATCH_SIZE = 32
+  scripts\extract_image_features.py:22:NUM_WORKERS = 0
+  scripts\extract_image_features.py:23:
+  scripts\extract_image_features.py:284:
+  scripts\extract_image_features.py:285:# ============================================================
+  scripts\extract_image_features.py:286:# Validation
+  scripts\extract_image_features.py:287:# ============================================================
+  scripts\extract_image_features.py:288:
+> scripts\extract_image_features.py:289:valid_feature_rows = np.isfinite(all_features).all(axis=1)
+  scripts\extract_image_features.py:290:
+  scripts\extract_image_features.py:291:print()
+  scripts\extract_image_features.py:292:print("=" * 60)
+  scripts\extract_image_features.py:293:print("EXTRACTION COMPLETE")
+  scripts\extract_image_features.py:294:print("=" * 60)
+  scripts\preprocess_dataset.py:37:        if col in df.columns:
+  scripts\preprocess_dataset.py:38:            df[col] = df[col].apply(clean_numeric)
+  scripts\preprocess_dataset.py:39:            
+  scripts\preprocess_dataset.py:40:    # Clean percentage columns
+  scripts\preprocess_dataset.py:41:    pct_cols = [
+> scripts\preprocess_dataset.py:42:        'Gross Margin Rate', 'Estimated Monthly Sales Growth Rate',
+  scripts\preprocess_dataset.py:43:        'Positive Rating Rate', 'Negative Rating Rate'
+  scripts\preprocess_dataset.py:44:    ]
+  scripts\preprocess_dataset.py:45:    for col in pct_cols:
+  scripts\preprocess_dataset.py:46:        if col in df.columns:
+  scripts\preprocess_dataset.py:47:            df[col] = df[col].apply(clean_percentage)
+  scripts\repair_image_features.py:11:# ============================================================
+  scripts\repair_image_features.py:12:# Configuration
+  scripts\repair_image_features.py:13:# ============================================================
+  scripts\repair_image_features.py:14:
+  scripts\repair_image_features.py:15:MANIFEST_PATH = "data/processed/images/image_manifest.csv"
+> scripts\repair_image_features.py:16:FEATURE_PATH = "data/processed/features/image_features.npy"
+  scripts\repair_image_features.py:17:
+  scripts\repair_image_features.py:18:BATCH_SIZE = 32
+  scripts\repair_image_features.py:19:NUM_WORKERS = 0
+  scripts\repair_image_features.py:20:SEED = 42
+  scripts\repair_image_features.py:21:
+  scripts\repair_image_features.py:49:
+  scripts\repair_image_features.py:50:available = manifest["download_status"].isin(
+  scripts\repair_image_features.py:51:    ["downloaded", "cached"]
+  scripts\repair_image_features.py:52:)
+  scripts\repair_image_features.py:53:
+> scripts\repair_image_features.py:54:feature_missing = ~np.isfinite(features).all(axis=1)
+  scripts\repair_image_features.py:55:
+  scripts\repair_image_features.py:56:repair_mask = available & feature_missing
+  scripts\repair_image_features.py:57:
+  scripts\repair_image_features.py:58:repair_df = manifest[repair_mask].copy()
+  scripts\repair_image_features.py:59:
+  scripts\repair_image_features.py:198:
+  scripts\repair_image_features.py:199:# ============================================================
+  scripts\repair_image_features.py:200:# Validation
+  scripts\repair_image_features.py:201:# ============================================================
+  scripts\repair_image_features.py:202:
+> scripts\repair_image_features.py:203:valid_rows = np.isfinite(features).all(axis=1)
+  scripts\repair_image_features.py:204:missing_rows = ~valid_rows
+  scripts\repair_image_features.py:205:
+  scripts\repair_image_features.py:206:actual_missing_downloads = (
+  scripts\repair_image_features.py:207:    manifest["download_status"] == "failed"
+  scripts\repair_image_features.py:208:).sum()
+  scripts\run_ablation.py:18:    Text        = 32-D
+  scripts\run_ablation.py:19:    Attributes  = 47-D
+  scripts\run_ablation.py:20:    Total       = 111-D
+  scripts\run_ablation.py:21:
+  scripts\run_ablation.py:22:Target:
+> scripts\run_ablation.py:23:    Estimated Monthly Sales Growth Rate
+  scripts\run_ablation.py:24:
+  scripts\run_ablation.py:25:Important:
+  scripts\run_ablation.py:26:    Sentiment is intentionally excluded because the required
+  scripts\run_ablation.py:27:    customer-review text is unavailable.
+  scripts\run_ablation.py:28:"""
+  scripts\run_ablation.py:71:TEXT_DIM = 32
+  scripts\run_ablation.py:72:ATTRIBUTE_DIM = 47
+  scripts\run_ablation.py:73:
+  scripts\run_ablation.py:74:DISCOUNT_DIM = 1
+  scripts\run_ablation.py:75:
+> scripts\run_ablation.py:76:TARGET_COLUMN = "Estimated Monthly Sales Growth Rate"
+  scripts\run_ablation.py:77:DISCOUNT_COLUMN = "Discount"
+  scripts\run_ablation.py:78:
+  scripts\run_ablation.py:79:EPOCHS = 60
+  scripts\run_ablation.py:80:PATIENCE = 8
+  scripts\run_ablation.py:81:BATCH_SIZE = 256
+  scripts\run_ablation.py:105:STATE_INDEX_PATH = (
+  scripts\run_ablation.py:106:    PROJECT_ROOT
+  scripts\run_ablation.py:107:    / "data"
+  scripts\run_ablation.py:108:    / "processed"
+  scripts\run_ablation.py:109:    / "state"
+> scripts\run_ablation.py:110:    / "state_row_indices.npy"
+  scripts\run_ablation.py:111:)
+  scripts\run_ablation.py:112:
+  scripts\run_ablation.py:113:
+  scripts\run_ablation.py:114:# ---------------------------------------------------------------------
+  scripts\run_ablation.py:115:# Reproducibility
+  scripts\run_ablation.py:291:    if len(source_indices) != len(state):
+  scripts\run_ablation.py:292:        raise ValueError(
+  scripts\run_ablation.py:293:            "State/source-index length mismatch."
+  scripts\run_ablation.py:294:        )
+  scripts\run_ablation.py:295:
+> scripts\run_ablation.py:296:    if not np.isfinite(state).all():
+  scripts\run_ablation.py:297:        raise ValueError(
+  scripts\run_ablation.py:298:            "State contains NaN or Inf values."
+  scripts\run_ablation.py:299:        )
+  scripts\run_ablation.py:300:
+  scripts\run_ablation.py:301:    # -------------------------------------------------------------
+  scripts\run_ablation.py:1118:    state_valid = (
+  scripts\run_ablation.py:1119:        state.shape[1]
+  scripts\run_ablation.py:1120:        == STATE_DIM
+  scripts\run_ablation.py:1121:    )
+  scripts\run_ablation.py:1122:
+> scripts\run_ablation.py:1123:    finite_state = np.isfinite(
+  scripts\run_ablation.py:1124:        state
+  scripts\run_ablation.py:1125:    ).all()
+  scripts\run_ablation.py:1126:
+  scripts\run_ablation.py:1127:    source_alignment_valid = (
+  scripts\run_ablation.py:1128:        len(source_indices)
+  scripts\run_ablation.py:1129:        == len(state)
+  scripts\run_ablation.py:1130:    )
+  scripts\run_ablation.py:1131:
+> scripts\run_ablation.py:1132:    summary_finite = np.isfinite(
+  scripts\run_ablation.py:1133:        summary_df.select_dtypes(
+  scripts\run_ablation.py:1134:            include=[np.number]
+  scripts\run_ablation.py:1135:        ).to_numpy()
+  scripts\run_ablation.py:1136:    ).all()
+  scripts\run_ablation.py:1137:
+  scripts\run_robustness.py:962:
+  scripts\run_robustness.py:963:    # -------------------------------------------------------------
+  scripts\run_robustness.py:964:    # Validation
+  scripts\run_robustness.py:965:    # -------------------------------------------------------------
+  scripts\run_robustness.py:966:
+> scripts\run_robustness.py:967:    finite_results = np.isfinite(
+  scripts\run_robustness.py:968:        results_df.select_dtypes(
+  scripts\run_robustness.py:969:            include=[np.number]
+  scripts\run_robustness.py:970:        ).to_numpy()
+  scripts\run_robustness.py:971:    ).all()
+  scripts\run_robustness.py:972:
+  scripts\smoke_test_image_pipeline.py:66:
+  scripts\smoke_test_image_pipeline.py:67:    assert feat_2048.shape == (sample_size, 2048), f"Unexpected 2048-D shape: {feat_2048.shape}"
+  scripts\smoke_test_image_pipeline.py:68:    assert feat_32.shape == (sample_size, 32), f"Unexpected 32-D shape: {feat_32.shape}"
+  scripts\smoke_test_image_pipeline.py:69:
+  scripts\smoke_test_image_pipeline.py:70:    # Check finite values
+> scripts\smoke_test_image_pipeline.py:71:    assert np.isfinite(feat_2048).all(), "feat_2048 contains NaN or Inf"
+> scripts\smoke_test_image_pipeline.py:72:    assert np.isfinite(feat_32).all(), "feat_32 contains NaN or Inf"
+  scripts\smoke_test_image_pipeline.py:73:    print("  Finite check: PASSED (Zero NaN, Zero Inf)")
+  scripts\smoke_test_image_pipeline.py:74:
+  scripts\smoke_test_image_pipeline.py:75:    # Check variance / standard deviation
+  scripts\smoke_test_image_pipeline.py:76:    dim_stds = np.std(feat_32, axis=0)
+  scripts\smoke_test_image_pipeline.py:77:    assert (dim_stds > 0).all(), "feat_32 has zero-variance dimensions"
+  scripts\smoke_test_phase8.py:23:
+  scripts\smoke_test_phase8.py:24:# Load a real state row
+  scripts\smoke_test_phase8.py:25:state_file = r'D:\College\Semesters\6th Sem\mini-project\data\processed\state\state_train.npy'
+  scripts\smoke_test_phase8.py:26:state_arr = np.load(state_file)
+  scripts\smoke_test_phase8.py:27:state = state_arr[0].astype('float32')
+> scripts\smoke_test_phase8.py:28:print(f'\n[3] Sample state shape={state.shape}, finite={bool(np.all(np.isfinite(state)))}')
+  scripts\smoke_test_phase8.py:29:
+  scripts\smoke_test_phase8.py:30:# Single predict
+  scripts\smoke_test_phase8.py:31:print('\n[4] Single predictions:')
+  scripts\smoke_test_phase8.py:32:for d in DISCOUNT_BINS:
+  scripts\smoke_test_phase8.py:33:    p = sim.predict(state, d)
+  scripts\smoke_test_phase8.py:49:print('\n[6] predict_batch():')
+  scripts\smoke_test_phase8.py:50:states_batch = np.tile(state, (9, 1))
+  scripts\smoke_test_phase8.py:51:discounts_batch = np.array(DISCOUNT_BINS, dtype='float32')
+  scripts\smoke_test_phase8.py:52:batch_out = sim.predict_batch(states_batch, discounts_batch)
+  scripts\smoke_test_phase8.py:53:assert batch_out.shape == (9,), f'Bad batch shape: {batch_out.shape}'
+> scripts\smoke_test_phase8.py:54:print(f'    Output shape: {batch_out.shape}, finite: {bool(np.all(np.isfinite(batch_out)))}')
+  scripts\smoke_test_phase8.py:55:
+  scripts\smoke_test_phase8.py:56:single_out = np.array([sim.predict(state, d) for d in DISCOUNT_BINS])
+  scripts\smoke_test_phase8.py:57:np.testing.assert_allclose(batch_out, single_out, rtol=1e-5)
+  scripts\smoke_test_phase8.py:58:print('    Batch == Single: PASS')
+  scripts\smoke_test_phase8.py:59:
+  scripts\smoke_test_ppo.py:34:
+  scripts\smoke_test_ppo.py:35:    print("State matrix shape:", states.shape)
+  scripts\smoke_test_ppo.py:36:
+  scripts\smoke_test_ppo.py:37:    assert states.ndim == 2
+  scripts\smoke_test_ppo.py:38:    assert states.shape[1] == 111
+> scripts\smoke_test_ppo.py:39:    assert np.isfinite(states).all()
+  scripts\smoke_test_ppo.py:40:
+  scripts\smoke_test_ppo.py:41:    print("OK -- 111-D states loaded")
+  scripts\smoke_test_ppo.py:42:
+  scripts\smoke_test_ppo.py:43:    # ---------------------------------------------------------
+  scripts\smoke_test_ppo.py:44:    # 2. Create real pricing environment
+  scripts\smoke_test_ppo.py:170:        all_rewards,
+  scripts\smoke_test_ppo.py:171:        dtype=np.float32,
+  scripts\smoke_test_ppo.py:172:    )
+  scripts\smoke_test_ppo.py:173:
+  scripts\smoke_test_ppo.py:174:    assert len(rewards) == SMOKE_EPISODES
+> scripts\smoke_test_ppo.py:175:    assert np.isfinite(rewards).all()
+  scripts\smoke_test_ppo.py:176:
+  scripts\smoke_test_ppo.py:177:    # Verify PPO can still produce a valid action.
+  scripts\smoke_test_ppo.py:178:    test_state = states[0]
+  scripts\smoke_test_ppo.py:179:
+  scripts\smoke_test_ppo.py:180:    action, log_probability, value = agent.select_action(
+  scripts\smoke_test_ppo.py:181:        test_state
+  scripts\smoke_test_ppo.py:182:    )
+  scripts\smoke_test_ppo.py:183:
+  scripts\smoke_test_ppo.py:184:    assert 0 <= action < 9
+> scripts\smoke_test_ppo.py:185:    assert np.isfinite(log_probability)
+> scripts\smoke_test_ppo.py:186:    assert np.isfinite(value)
+  scripts\smoke_test_ppo.py:187:
+  scripts\smoke_test_ppo.py:188:    print("Final action           :", action)
+  scripts\smoke_test_ppo.py:189:    print("Final discount         :", environment.action_to_discount(action))
+  scripts\smoke_test_ppo.py:190:    print("Final log probability  :", log_probability)
+  scripts\smoke_test_ppo.py:191:    print("Final state value      :", value)
+  scripts\smoke_test_pricing_pipeline.py:20:SUPPORTED_DISCOUNTS = [5, 10, 15, 20, 25, 30, 35, 40]
+  scripts\smoke_test_pricing_pipeline.py:21:PAPER_DISCOUNTS = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+  scripts\smoke_test_pricing_pipeline.py:22:
+  scripts\smoke_test_pricing_pipeline.py:23:STATE_PATH = ROOT / "data" / "processed" / "state" / "state.npy"
+  scripts\smoke_test_pricing_pipeline.py:24:INDICES_PATH = (
+> scripts\smoke_test_pricing_pipeline.py:25:    ROOT / "data" / "processed" / "state" / "state_row_indices.npy"
+  scripts\smoke_test_pricing_pipeline.py:26:)
+  scripts\smoke_test_pricing_pipeline.py:27:PPO_PATH = (
+  scripts\smoke_test_pricing_pipeline.py:28:    ROOT / "models" / "ppo_transfer"
+  scripts\smoke_test_pricing_pipeline.py:29:    / "ppo_transfer_supported_8action_1000_updates.pth"
+  scripts\smoke_test_pricing_pipeline.py:30:)
+  scripts\smoke_test_pricing_pipeline.py:59:        len(states) == len(source_indices),
+  scripts\smoke_test_pricing_pipeline.py:60:        "State rows and source-index mapping have matching lengths",
+  scripts\smoke_test_pricing_pipeline.py:61:    )
+  scripts\smoke_test_pricing_pipeline.py:62:
+  scripts\smoke_test_pricing_pipeline.py:63:    # Find a finite row. The saved state is expected to be entirely finite.
+> scripts\smoke_test_pricing_pipeline.py:64:    finite_rows = np.isfinite(states).all(axis=1)
+  scripts\smoke_test_pricing_pipeline.py:65:    valid_positions = np.flatnonzero(finite_rows)
+  scripts\smoke_test_pricing_pipeline.py:66:    check(len(valid_positions) > 0, "At least one finite product state exists")
+  scripts\smoke_test_pricing_pipeline.py:67:
+  scripts\smoke_test_pricing_pipeline.py:68:    position = int(valid_positions[0])
+  scripts\smoke_test_pricing_pipeline.py:69:    state = np.asarray(states[position], dtype=np.float32).copy()
+  scripts\smoke_test_pricing_pipeline.py:70:    source_row = int(source_indices[position])
+  scripts\smoke_test_pricing_pipeline.py:71:
+  scripts\smoke_test_pricing_pipeline.py:72:    check(
+> scripts\smoke_test_pricing_pipeline.py:73:        state.shape == (STATE_DIM,) and np.isfinite(state).all(),
+  scripts\smoke_test_pricing_pipeline.py:74:        "Selected product state has 111 finite features",
+  scripts\smoke_test_pricing_pipeline.py:75:    )
+  scripts\smoke_test_pricing_pipeline.py:76:    print(f"Selected state position: {position}")
+  scripts\smoke_test_pricing_pipeline.py:77:    print(f"Mapped source row index: {source_row}")
+  scripts\smoke_test_pricing_pipeline.py:78:
+  scripts\smoke_test_pricing_pipeline.py:97:    check(
+  scripts\smoke_test_pricing_pipeline.py:98:        set(predictions.keys()) == set(PAPER_DISCOUNTS),
+  scripts\smoke_test_pricing_pipeline.py:99:        "Simulator returned predictions for all nine paper discount bins",
+  scripts\smoke_test_pricing_pipeline.py:100:    )
+  scripts\smoke_test_pricing_pipeline.py:101:    check(
+> scripts\smoke_test_pricing_pipeline.py:102:        all(np.isfinite(v) for v in predictions.values()),
+  scripts\smoke_test_pricing_pipeline.py:103:        "All candidate-discount predictions are finite",
+  scripts\smoke_test_pricing_pipeline.py:104:    )
+  scripts\smoke_test_pricing_pipeline.py:105:
+  scripts\smoke_test_pricing_pipeline.py:106:    print("\nPredicted sales growth by discount:")
+  scripts\smoke_test_pricing_pipeline.py:107:    for discount in PAPER_DISCOUNTS:
+  scripts\smoke_test_pricing_pipeline.py:144:    check(
+  scripts\smoke_test_pricing_pipeline.py:145:        probabilities.shape == (ACTION_DIM,),
+  scripts\smoke_test_pricing_pipeline.py:146:        "PPO actor returned eight action probabilities",
+  scripts\smoke_test_pricing_pipeline.py:147:    )
+  scripts\smoke_test_pricing_pipeline.py:148:    check(
+> scripts\smoke_test_pricing_pipeline.py:149:        np.isfinite(probabilities).all()
+> scripts\smoke_test_pricing_pipeline.py:150:        and np.isfinite(value),
+  scripts\smoke_test_pricing_pipeline.py:151:        "PPO probabilities and critic value are finite",
+  scripts\smoke_test_pricing_pipeline.py:152:    )
+  scripts\smoke_test_pricing_pipeline.py:153:    check(
+  scripts\smoke_test_pricing_pipeline.py:154:        np.all(probabilities >= 0)
+  scripts\smoke_test_pricing_pipeline.py:155:        and np.isclose(probabilities.sum(), 1.0, atol=1e-5),
+  scripts\train_policy_distillation.py:44:
+  scripts\train_policy_distillation.py:45:
+  scripts\train_policy_distillation.py:46:def load_states():
+  scripts\train_policy_distillation.py:47:    d = PROJECT_ROOT / "data/processed/state"
+  scripts\train_policy_distillation.py:48:    states = np.load(d / "state.npy").astype(np.float32)
+> scripts\train_policy_distillation.py:49:    rows = np.load(d / "state_row_indices.npy").astype(np.int64)
+  scripts\train_policy_distillation.py:50:    return states, rows
+  scripts\train_policy_distillation.py:51:
+  scripts\train_policy_distillation.py:52:
+  scripts\train_policy_distillation.py:53:def load_adapter(device):
+  scripts\train_policy_distillation.py:54:    from src.transfer.transfer_adapter import TransferAdapter, TransferAdapterConfig
+  scripts\train_policy_distillation.py:105:
+  scripts\train_policy_distillation.py:106:
+  scripts\train_policy_distillation.py:107:def build_targets(states, rows, products, device):
+  scripts\train_policy_distillation.py:108:    aligned = products.iloc[rows]
+  scripts\train_policy_distillation.py:109:    months = pd.to_numeric(aligned["MonthNum"], errors="coerce").to_numpy()
+> scripts\train_policy_distillation.py:110:    valid = np.isfinite(months)
+  scripts\train_policy_distillation.py:111:
+  scripts\train_policy_distillation.py:112:    train = valid & (months >= 1) & (months <= 6)
+  scripts\train_policy_distillation.py:113:    val = valid & (months >= 7) & (months <= 8)
+  scripts\train_policy_distillation.py:114:
+  scripts\train_policy_distillation.py:115:    source = load_source_policy(device)
+  scripts\train_ppo_transfer.py:525:                probabilities.clamp_min(1e-8)
+  scripts\train_ppo_transfer.py:526:            )
+  scripts\train_ppo_transfer.py:527:        ).sum(dim=-1)
+  scripts\train_ppo_transfer.py:528:
+  scripts\train_ppo_transfer.py:529:    logits_finite = bool(
+> scripts\train_ppo_transfer.py:530:        torch.isfinite(logits).all()
+  scripts\train_ppo_transfer.py:531:    )
+  scripts\train_ppo_transfer.py:532:
+  scripts\train_ppo_transfer.py:533:    probabilities_finite = bool(
+> scripts\train_ppo_transfer.py:534:        torch.isfinite(probabilities).all()
+  scripts\train_ppo_transfer.py:535:    )
+  scripts\train_ppo_transfer.py:536:
+  scripts\train_ppo_transfer.py:537:    probability_sums_valid = torch.allclose(
+  scripts\train_ppo_transfer.py:538:        probabilities.sum(dim=-1),
+  scripts\train_ppo_transfer.py:539:        torch.ones(
+  scripts\train_ppo_warmstart.py:449:    # -----------------------------------------------------------------------
+  scripts\train_ppo_warmstart.py:450:
+  scripts\train_ppo_warmstart.py:451:    assert logits.shape[1] == 9
+  scripts\train_ppo_warmstart.py:452:
+  scripts\train_ppo_warmstart.py:453:    assert torch.all(
+> scripts\train_ppo_warmstart.py:454:        torch.isfinite(logits)
+  scripts\train_ppo_warmstart.py:455:    )
+  scripts\train_ppo_warmstart.py:456:
+  scripts\train_ppo_warmstart.py:457:    assert torch.all(
+> scripts\train_ppo_warmstart.py:458:        torch.isfinite(probabilities)
+  scripts\train_ppo_warmstart.py:459:    )
+  scripts\train_ppo_warmstart.py:460:
+  scripts\train_ppo_warmstart.py:461:    assert torch.allclose(
+  scripts\train_ppo_warmstart.py:462:        probabilities.sum(dim=1),
+  scripts\train_ppo_warmstart.py:463:        torch.ones(
+  scripts\train_sales_predictor.py:6:    → Linear(80, 256) → BatchNorm → ReLU → Dropout(0.2)
+  scripts\train_sales_predictor.py:7:    → Linear(256, 128) → BatchNorm → ReLU → Dropout(0.1)
+  scripts\train_sales_predictor.py:8:    → Linear(128, 64)  → ReLU
+  scripts\train_sales_predictor.py:9:    → Linear(64, 1)
+  scripts\train_sales_predictor.py:10:
+> scripts\train_sales_predictor.py:11:Target: Estimated Monthly Sales Growth Rate (%)
+  scripts\train_sales_predictor.py:12:After training, the model is frozen and saved. PPO will use it as the
+  scripts\train_sales_predictor.py:13:transition/simulation engine during policy optimisation.
+  scripts\train_sales_predictor.py:14:
+  scripts\train_sales_predictor.py:15:Paper principle: Sales predictor is trained first, then frozen before DRL.
+  scripts\train_sales_predictor.py:16:"""
+  scripts\train_sales_predictor.py:66:        return self.net(x).squeeze(-1)
+  scripts\train_sales_predictor.py:67:
+  scripts\train_sales_predictor.py:68:
+  scripts\train_sales_predictor.py:69:# ── Data prep ────────────────────────────────────────────────
+  scripts\train_sales_predictor.py:70:def prepare_data(state: np.ndarray, df: pd.DataFrame):
+> scripts\train_sales_predictor.py:71:    target = df["Estimated Monthly Sales Growth Rate"].fillna(0.0).values.astype(np.float32)
+  scripts\train_sales_predictor.py:72:    discount = df["Discount"].fillna(0.0).values.astype(np.float32).reshape(-1, 1)
+  scripts\train_sales_predictor.py:73:    X = np.concatenate([state, discount], axis=1).astype(np.float32)
+  scripts\train_sales_predictor.py:74:    return X, target
+  scripts\train_sales_predictor.py:75:
+  scripts\train_sales_predictor.py:76:
+  scripts\train_sales_predictor.py:227:    print(f"Device: {device}")
+  scripts\train_sales_predictor.py:228:
+  scripts\train_sales_predictor.py:229:    # ── Load state and dataset ────────────────────────────────
+  scripts\train_sales_predictor.py:230:    state = np.load("data/processed/state/state.npy")
+  scripts\train_sales_predictor.py:231:    df = pd.read_parquet("data/processed/products_clean.parquet").reset_index(drop=True)
+> scripts\train_sales_predictor.py:232:    if os.path.exists("data/processed/state/state_row_indices.npy"):
+> scripts\train_sales_predictor.py:233:        row_indices = np.load("data/processed/state/state_row_indices.npy")
+  scripts\train_sales_predictor.py:234:        df = df.iloc[row_indices].reset_index(drop=True)
+  scripts\train_sales_predictor.py:235:    assert len(state) == len(df), f"State / dataset length mismatch: {len(state)} vs {len(df)}"
+  scripts\train_sales_predictor.py:236:
+  scripts\train_sales_predictor.py:237:    X, y = prepare_data(state, df)
+  scripts\train_sales_predictor.py:238:
+  scripts\train_sales_predictor.py:334:        "architecture": f"MLP: {input_dim}→256→BN→128→BN→64→1 (ItaNet-111 Predictor)",
+  scripts\train_sales_predictor.py:335:        "input_dim": int(input_dim),
+  scripts\train_sales_predictor.py:336:        "state_dim": int(state.shape[1]),
+  scripts\train_sales_predictor.py:337:        "action_dim": 1,
+  scripts\train_sales_predictor.py:338:        "discount_bins": DISCOUNT_BINS,
+> scripts\train_sales_predictor.py:339:        "target": "Estimated Monthly Sales Growth Rate",
+  scripts\train_sales_predictor.py:340:        "activation": "ReLU",
+  scripts\train_sales_predictor.py:341:        "optimizer": "Adam",
+  scripts\train_sales_predictor.py:342:        "lr": 1e-3,
+  scripts\train_sales_predictor.py:343:        "weight_decay": 1e-5,
+  scripts\train_sales_predictor.py:344:        "batch_size": 256,
+  scripts\train_sales_predictor_robust.py:168:    state = np.load(
+  scripts\train_sales_predictor_robust.py:169:        "data/processed/state/state.npy"
+  scripts\train_sales_predictor_robust.py:170:    ).astype(np.float32)
+  scripts\train_sales_predictor_robust.py:171:
+  scripts\train_sales_predictor_robust.py:172:    row_indices = np.load(
+> scripts\train_sales_predictor_robust.py:173:        "data/processed/state/state_row_indices.npy"
+  scripts\train_sales_predictor_robust.py:174:    ).astype(np.int64)
+  scripts\train_sales_predictor_robust.py:175:
+  scripts\train_sales_predictor_robust.py:176:    df = pd.read_parquet(
+  scripts\train_sales_predictor_robust.py:177:        "data/processed/products_clean.parquet"
+  scripts\train_sales_predictor_robust.py:178:    ).reset_index(drop=True)
+  scripts\train_sales_predictor_robust.py:179:
+  scripts\train_sales_predictor_robust.py:180:    if len(state) != len(row_indices):
+  scripts\train_sales_predictor_robust.py:181:        raise ValueError(
+> scripts\train_sales_predictor_robust.py:182:            "state.npy and state_row_indices.npy "
+  scripts\train_sales_predictor_robust.py:183:            "length mismatch"
+  scripts\train_sales_predictor_robust.py:184:        )
+  scripts\train_sales_predictor_robust.py:185:
+  scripts\train_sales_predictor_robust.py:186:    if state.shape[1] != 111:
+  scripts\train_sales_predictor_robust.py:187:        raise ValueError(
+  scripts\train_sales_predictor_robust.py:188:            f"Expected 111-D state, "
+  scripts\train_sales_predictor_robust.py:189:            f"got {state.shape[1]}"
+  scripts\train_sales_predictor_robust.py:190:        )
+  scripts\train_sales_predictor_robust.py:191:
+> scripts\train_sales_predictor_robust.py:192:    if not np.isfinite(state).all():
+  scripts\train_sales_predictor_robust.py:193:        raise ValueError(
+  scripts\train_sales_predictor_robust.py:194:            "State contains NaN or Inf"
+  scripts\train_sales_predictor_robust.py:195:        )
+  scripts\train_sales_predictor_robust.py:196:
+  scripts\train_sales_predictor_robust.py:197:    # ----------------------------------------------------------
+  scripts\train_sales_predictor_robust.py:214:    # ----------------------------------------------------------
+  scripts\train_sales_predictor_robust.py:215:    # Target
+  scripts\train_sales_predictor_robust.py:216:    # ----------------------------------------------------------
+  scripts\train_sales_predictor_robust.py:217:
+  scripts\train_sales_predictor_robust.py:218:    target_column = (
+> scripts\train_sales_predictor_robust.py:219:        "Estimated Monthly Sales Growth Rate"
+  scripts\train_sales_predictor_robust.py:220:    )
+  scripts\train_sales_predictor_robust.py:221:
+  scripts\train_sales_predictor_robust.py:222:    y_raw = (
+  scripts\train_sales_predictor_robust.py:223:        aligned_df[target_column]
+  scripts\train_sales_predictor_robust.py:224:        .fillna(0.0)
+  scripts\train_sales_predictor_train_only.py:17:DATA_PATH = ROOT / "data" / "processed" / "products_clean.parquet"
+  scripts\train_sales_predictor_train_only.py:18:
+  scripts\train_sales_predictor_train_only.py:19:OUTPUT_DIR = ROOT / "models" / "sales_predictor_train_only"
+  scripts\train_sales_predictor_train_only.py:20:REPORT_DIR = ROOT / "reports" / "sales_predictor_train_only"
+  scripts\train_sales_predictor_train_only.py:21:
+> scripts\train_sales_predictor_train_only.py:22:TARGET = "Estimated Monthly Sales Growth Rate"
+  scripts\train_sales_predictor_train_only.py:23:DISCOUNT = "Discount"
+  scripts\train_sales_predictor_train_only.py:24:
+  scripts\train_sales_predictor_train_only.py:25:SEED = 42
+  scripts\train_sales_predictor_train_only.py:26:EPOCHS = 60
+  scripts\train_sales_predictor_train_only.py:27:PATIENCE = 8
+  scripts\train_sales_predictor_train_only.py:98:            f"Model output: {OUTPUT_DIR}\n"
+  scripts\train_sales_predictor_train_only.py:99:            f"Report output: {REPORT_DIR}"
+  scripts\train_sales_predictor_train_only.py:100:        )
+  scripts\train_sales_predictor_train_only.py:101:
+  scripts\train_sales_predictor_train_only.py:102:    state_path = STATE_DIR / "state.npy"
+> scripts\train_sales_predictor_train_only.py:103:    index_path = STATE_DIR / "state_row_indices.npy"
+  scripts\train_sales_predictor_train_only.py:104:
+  scripts\train_sales_predictor_train_only.py:105:    state = np.load(state_path).astype(np.float32)
+  scripts\train_sales_predictor_train_only.py:106:    row_indices = np.load(index_path).astype(np.int64)
+  scripts\train_sales_predictor_train_only.py:107:
+  scripts\train_sales_predictor_train_only.py:108:    df = pd.read_parquet(DATA_PATH).reset_index(drop=True)
+  scripts\train_sales_predictor_train_only.py:109:    aligned = df.iloc[row_indices].reset_index(drop=True)
+  scripts\train_sales_predictor_train_only.py:110:
+  scripts\train_sales_predictor_train_only.py:111:    if len(state) != len(aligned):
+  scripts\train_sales_predictor_train_only.py:112:        raise ValueError("State and dataframe row counts do not match.")
+> scripts\train_sales_predictor_train_only.py:113:    if not np.isfinite(state).all():
+  scripts\train_sales_predictor_train_only.py:114:        raise ValueError("State contains non-finite values.")
+  scripts\train_sales_predictor_train_only.py:115:    if aligned[TARGET].isna().any():
+  scripts\train_sales_predictor_train_only.py:116:        raise ValueError(f"{TARGET} contains missing values.")
+  scripts\train_sales_predictor_train_only.py:117:    if aligned[DISCOUNT].isna().any():
+  scripts\train_sales_predictor_train_only.py:118:        raise ValueError(
+  scripts\train_sales_predictor_train_only.py:133:
+  scripts\train_sales_predictor_train_only.py:134:    # Inputs are the 111-D corrected state plus observed discount.
+  scripts\train_sales_predictor_train_only.py:135:    x = np.concatenate([state, discounts[:, None]], axis=1)
+  scripts\train_sales_predictor_train_only.py:136:    y = targets[:, None]
+  scripts\train_sales_predictor_train_only.py:137:
+> scripts\train_sales_predictor_train_only.py:138:    if not np.isfinite(x).all() or not np.isfinite(y).all():
+  scripts\train_sales_predictor_train_only.py:139:        raise ValueError("Training inputs or targets contain non-finite values.")
+  scripts\train_sales_predictor_train_only.py:140:
+  scripts\train_sales_predictor_train_only.py:141:    def make_loader(mask: np.ndarray, shuffle: bool) -> DataLoader:
+  scripts\train_sales_predictor_train_only.py:142:        dataset = TensorDataset(
+  scripts\train_sales_predictor_train_only.py:143:            torch.from_numpy(x[mask]),
+  scripts\train_soft_policy_distillation.py:70:    states = np.load(
+  scripts\train_soft_policy_distillation.py:71:        state_dir / "state.npy"
+  scripts\train_soft_policy_distillation.py:72:    ).astype(np.float32)
+  scripts\train_soft_policy_distillation.py:73:
+  scripts\train_soft_policy_distillation.py:74:    row_indices = np.load(
+> scripts\train_soft_policy_distillation.py:75:        state_dir / "state_row_indices.npy"
+  scripts\train_soft_policy_distillation.py:76:    ).astype(np.int64)
+  scripts\train_soft_policy_distillation.py:77:
+  scripts\train_soft_policy_distillation.py:78:    products = pd.read_parquet(
+  scripts\train_soft_policy_distillation.py:79:        PROJECT_ROOT / "data/processed/products_clean.parquet"
+  scripts\train_soft_policy_distillation.py:80:    )
+  scripts\train_soft_policy_distillation.py:83:    months = pd.to_numeric(
+  scripts\train_soft_policy_distillation.py:84:        aligned["MonthNum"],
+  scripts\train_soft_policy_distillation.py:85:        errors="coerce",
+  scripts\train_soft_policy_distillation.py:86:    ).to_numpy()
+  scripts\train_soft_policy_distillation.py:87:
+> scripts\train_soft_policy_distillation.py:88:    train_mask = np.isfinite(months) & (months <= 6)
+> scripts\train_soft_policy_distillation.py:89:    val_mask = np.isfinite(months) & (months >= 7) & (months <= 8)
+  scripts\train_soft_policy_distillation.py:90:
+  scripts\train_soft_policy_distillation.py:91:    return states, train_mask, val_mask
+  scripts\train_soft_policy_distillation.py:92:
+  scripts\train_soft_policy_distillation.py:93:
+  scripts\train_soft_policy_distillation.py:94:@torch.no_grad()
+  scripts\train_soft_policy_distillation_v2.py:79:    states = np.load(
+  scripts\train_soft_policy_distillation_v2.py:80:        state_dir / "state.npy"
+  scripts\train_soft_policy_distillation_v2.py:81:    ).astype(np.float32)
+  scripts\train_soft_policy_distillation_v2.py:82:
+  scripts\train_soft_policy_distillation_v2.py:83:    rows = np.load(
+> scripts\train_soft_policy_distillation_v2.py:84:        state_dir / "state_row_indices.npy"
+  scripts\train_soft_policy_distillation_v2.py:85:    ).astype(np.int64)
+  scripts\train_soft_policy_distillation_v2.py:86:
+  scripts\train_soft_policy_distillation_v2.py:87:    products = pd.read_parquet(
+  scripts\train_soft_policy_distillation_v2.py:88:        PROJECT_ROOT
+  scripts\train_soft_policy_distillation_v2.py:89:        / "data/processed/products_clean.parquet"
+  scripts\train_soft_policy_distillation_v2.py:93:        products.iloc[rows]["MonthNum"],
+  scripts\train_soft_policy_distillation_v2.py:94:        errors="coerce",
+  scripts\train_soft_policy_distillation_v2.py:95:    ).to_numpy()
+  scripts\train_soft_policy_distillation_v2.py:96:
+  scripts\train_soft_policy_distillation_v2.py:97:    train_mask = (
+> scripts\train_soft_policy_distillation_v2.py:98:        np.isfinite(months)
+  scripts\train_soft_policy_distillation_v2.py:99:        & (months >= 1)
+  scripts\train_soft_policy_distillation_v2.py:100:        & (months <= 6)
+  scripts\train_soft_policy_distillation_v2.py:101:    )
+  scripts\train_soft_policy_distillation_v2.py:102:
+  scripts\train_soft_policy_distillation_v2.py:103:    val_mask = (
+> scripts\train_soft_policy_distillation_v2.py:104:        np.isfinite(months)
+  scripts\train_soft_policy_distillation_v2.py:105:        & (months >= 7)
+  scripts\train_soft_policy_distillation_v2.py:106:        & (months <= 8)
+  scripts\train_soft_policy_distillation_v2.py:107:    )
+  scripts\train_soft_policy_distillation_v2.py:108:
+  scripts\train_soft_policy_distillation_v2.py:109:    return states, train_mask, val_mask
+  scripts\train_transfer_adapter.py:79:
+  scripts\train_transfer_adapter.py:80:
+  scripts\train_transfer_adapter.py:81:def load_target_training_data() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+  scripts\train_transfer_adapter.py:82:    state_dir = PROJECT_ROOT / "data" / "processed" / "state"
+  scripts\train_transfer_adapter.py:83:    state_path = state_dir / "state.npy"
+> scripts\train_transfer_adapter.py:84:    row_idx_path = state_dir / "state_row_indices.npy"
+  scripts\train_transfer_adapter.py:85:
+  scripts\train_transfer_adapter.py:86:    if not state_path.exists() or not row_idx_path.exists():
+  scripts\train_transfer_adapter.py:87:        raise FileNotFoundError(
+> scripts\train_transfer_adapter.py:88:            "Expected data/processed/state/state.npy and state_row_indices.npy"
+  scripts\train_transfer_adapter.py:89:        )
+  scripts\train_transfer_adapter.py:90:
+  scripts\train_transfer_adapter.py:91:    state = np.load(state_path).astype(np.float32)
+  scripts\train_transfer_adapter.py:92:    row_indices = np.load(row_idx_path).astype(np.int64)
+  scripts\train_transfer_adapter.py:93:
+  scripts\train_transfer_adapter.py:113:    months = pd.to_numeric(
+  scripts\train_transfer_adapter.py:114:        df.iloc[row_indices][month_col], errors="coerce"
+  scripts\train_transfer_adapter.py:115:    ).to_numpy(dtype=np.float32)
+  scripts\train_transfer_adapter.py:116:
+  scripts\train_transfer_adapter.py:117:    valid = (
+> scripts\train_transfer_adapter.py:118:        np.isfinite(state).all(axis=1)
+> scripts\train_transfer_adapter.py:119:        & np.isfinite(discounts)
+> scripts\train_transfer_adapter.py:120:        & np.isfinite(months)
+  scripts\train_transfer_adapter.py:121:        & (discounts >= 0.0)
+  scripts\train_transfer_adapter.py:122:        & (discounts <= 40.0)
+  scripts\train_transfer_adapter.py:123:    )
+  scripts\train_transfer_adapter.py:124:
+  scripts\train_transfer_adapter.py:125:    # Chronological training split: Jan-Jun, matching the existing target PPO setup.
+  scripts\validate_end_to_end.py:8:ROOT = Path(__file__).resolve().parents[1]
+  scripts\validate_end_to_end.py:9:
+  scripts\validate_end_to_end.py:10:EXPECTED_SHAPES = {
+  scripts\validate_end_to_end.py:11:    "attribute_features.npy": (34041, 47),
+  scripts\validate_end_to_end.py:12:    "text_features.npy": (34041, 32),
+> scripts\validate_end_to_end.py:13:    "image_features.npy": (34041, 32),
+  scripts\validate_end_to_end.py:14:    "state.npy": (34028, 111),
+> scripts\validate_end_to_end.py:15:    "state_row_indices.npy": (34028,),
+  scripts\validate_end_to_end.py:16:}
+  scripts\validate_end_to_end.py:17:
+  scripts\validate_end_to_end.py:18:REQUIRED_FILES = [
+  scripts\validate_end_to_end.py:19:    "models/sales_predictor/config.json",
+  scripts\validate_end_to_end.py:20:    "models/ppo_transfer/ppo_transfer_supported_8action_1000_updates.pth",
+  scripts\validate_end_to_end.py:105:                report(False, f"{filename} has a non-numeric dtype: {array.dtype}")
+  scripts\validate_end_to_end.py:106:                continue
+  scripts\validate_end_to_end.py:107:
+  scripts\validate_end_to_end.py:108:            # Image embeddings may contain NaNs for products with unavailable
+  scripts\validate_end_to_end.py:109:            # images. Validate only rows referenced by the final state mapping.
+> scripts\validate_end_to_end.py:110:            if filename == "image_features.npy":
+> scripts\validate_end_to_end.py:111:                index_path = find_file("state_row_indices.npy")
+  scripts\validate_end_to_end.py:112:
+  scripts\validate_end_to_end.py:113:                if index_path is None:
+  scripts\validate_end_to_end.py:114:                    report(
+  scripts\validate_end_to_end.py:115:                        False,
+  scripts\validate_end_to_end.py:116:                        "Cannot validate image features: state row indices missing"
+  scripts\validate_end_to_end.py:138:                    )
+  scripts\validate_end_to_end.py:139:                    continue
+  scripts\validate_end_to_end.py:140:
+  scripts\validate_end_to_end.py:141:                selected = array[indices]
+  scripts\validate_end_to_end.py:142:                report(
+> scripts\validate_end_to_end.py:143:                    bool(np.isfinite(selected).all()),
+  scripts\validate_end_to_end.py:144:                    "Image features referenced by final state are finite"
+  scripts\validate_end_to_end.py:145:                )
+  scripts\validate_end_to_end.py:146:            else:
+  scripts\validate_end_to_end.py:147:                report(
+> scripts\validate_end_to_end.py:148:                    bool(np.isfinite(array).all()),
+  scripts\validate_end_to_end.py:149:                    f"{filename} contains only finite numeric values"
+  scripts\validate_end_to_end.py:150:                )
+  scripts\validate_end_to_end.py:151:
+  scripts\validate_end_to_end.py:152:        except Exception as exc:
+  scripts\validate_end_to_end.py:153:            report(False, f"Could not load {filename}: {exc}")
+  scripts\validate_end_to_end.py:154:
+  scripts\validate_end_to_end.py:155:
+  scripts\validate_end_to_end.py:156:    # 3. Validate row-index mapping.
+  scripts\validate_end_to_end.py:157:    print("\n--- 3. State row-index integrity ---")
+> scripts\validate_end_to_end.py:158:    indices = arrays.get("state_row_indices.npy")
+  scripts\validate_end_to_end.py:159:
+  scripts\validate_end_to_end.py:160:    if indices is not None and indices.ndim == 1:
+  scripts\validate_end_to_end.py:161:        integer_indices = np.issubdtype(indices.dtype, np.integer)
+  scripts\validate_end_to_end.py:162:        report(integer_indices, "State row indices use an integer dtype")
+  scripts\validate_end_to_end.py:163:
+  scripts\validate_end_to_end.py:236:            has_rows = len(df) > 0
+  scripts\validate_end_to_end.py:237:            report(has_rows, f"{path.relative_to(ROOT)} has {len(df)} rows")
+  scripts\validate_end_to_end.py:238:
+  scripts\validate_end_to_end.py:239:            numeric = df.select_dtypes(include=[np.number])
+  scripts\validate_end_to_end.py:240:            if not numeric.empty:
+> scripts\validate_end_to_end.py:241:                finite = bool(np.isfinite(numeric.to_numpy()).all())
+  scripts\validate_end_to_end.py:242:                report(
+  scripts\validate_end_to_end.py:243:                    finite,
+  scripts\validate_end_to_end.py:244:                    f"Numeric values in {path.relative_to(ROOT)} are finite"
+  scripts\validate_end_to_end.py:245:                )
+  scripts\validate_end_to_end.py:246:        except Exception as exc:
+  scripts\validate_image_features.py:17:import sys
+  scripts\validate_image_features.py:18:import numpy as np
+  scripts\validate_image_features.py:19:import pandas as pd
+  scripts\validate_image_features.py:20:
+  scripts\validate_image_features.py:21:
+> scripts\validate_image_features.py:22:def validate_image_features(
+  scripts\validate_image_features.py:23:    csv_path: str = "data/raw/products.csv",
+> scripts\validate_image_features.py:24:    full_features_path: str = "data/processed/features/image_features.npy",
+> scripts\validate_image_features.py:25:    unique_features_path: str = "data/processed/features/image_features_unique.npy",
+  scripts\validate_image_features.py:26:    mapping_path: str = "data/processed/features/image_feature_mapping.csv",
+  scripts\validate_image_features.py:27:    output_dir: str = "reports/phase_3"
+  scripts\validate_image_features.py:28:):
+  scripts\validate_image_features.py:29:    print("=" * 60)
+  scripts\validate_image_features.py:30:    print("PHASE 2.5: NUMERICAL VALIDATION OF IMAGE FEATURES")
+  scripts\validate_image_features.py:54:    assert len(mapping) == n_rows, f"Expected mapping length {n_rows}, got {len(mapping)}"
+  scripts\validate_image_features.py:55:
+  scripts\validate_image_features.py:56:    # 3. Finite checks
+  scripts\validate_image_features.py:57:    has_nan = bool(np.isnan(features).any())
+  scripts\validate_image_features.py:58:    has_inf = bool(np.isinf(features).any())
+> scripts\validate_image_features.py:59:    is_finite = bool(np.isfinite(features).all())
+  scripts\validate_image_features.py:60:    assert is_finite, "Feature matrix contains NaN or Inf"
+  scripts\validate_image_features.py:61:    print("Finite check: PASSED (Zero NaN, Zero Inf)")
+  scripts\validate_image_features.py:62:
+  scripts\validate_image_features.py:63:    # 4. Consistency checks
+  scripts\validate_image_features.py:64:    # Verify mapping index bounds
+  scripts\validate_image_features.py:163:    print(f"Saved validation Markdown to: {md_path}")
+  scripts\validate_image_features.py:164:    return validation_data
+  scripts\validate_image_features.py:165:
+  scripts\validate_image_features.py:166:
+  scripts\validate_image_features.py:167:if __name__ == "__main__":
+> scripts\validate_image_features.py:168:    validate_image_features()
+  scripts\validate_state.py:56:    else:
+  scripts\validate_state.py:57:        print(f"[PASS] State dim = {state.shape[1]} "
+  scripts\validate_state.py:58:              f"(Image {IMAGE_DIM} + Text {TEXT_DIM} + Attrs {ATTRIBUTE_DIM})")
+  scripts\validate_state.py:59:
+  scripts\validate_state.py:60:    # 2. Alignment with row indices and validity
+> scripts\validate_state.py:61:    row_indices = np.load("data/processed/state/state_row_indices.npy")
+  scripts\validate_state.py:62:    validity_df = pd.read_csv("data/processed/state/state_validity.csv")
+  scripts\validate_state.py:63:
+  scripts\validate_state.py:64:    if state.shape[0] != len(row_indices):
+  scripts\validate_state.py:65:        errors.append(
+  scripts\validate_state.py:66:            f"FAIL alignment: state rows {state.shape[0]} ≠ valid row indices {len(row_indices)}"
+  scripts\validate_state.py:111:    # 6. Image / Text / attribute sub-block sanity
+  scripts\validate_state.py:112:    img_block = state[:, :IMAGE_DIM]
+  scripts\validate_state.py:113:    text_block = state[:, IMAGE_DIM:IMAGE_DIM + TEXT_DIM]
+  scripts\validate_state.py:114:    attr_block = state[:, IMAGE_DIM + TEXT_DIM:IMAGE_DIM + TEXT_DIM + ATTRIBUTE_DIM]
+  scripts\validate_state.py:115:
+> scripts\validate_state.py:116:    cached_img = np.load("data/processed/features/image_features.npy")[row_indices]
+  scripts\validate_state.py:117:    cached_text = np.load("data/processed/features/text_features.npy")[row_indices]
+  scripts\validate_state.py:118:    cached_attr = np.load("data/processed/features/attribute_features.npy")[row_indices]
+  scripts\validate_state.py:119:
+  scripts\validate_state.py:120:    if not np.allclose(img_block, cached_img, atol=1e-5):
+> scripts\validate_state.py:121:        errors.append("FAIL: image sub-block does not match cached image_features.npy")
+  scripts\validate_state.py:122:    else:
+> scripts\validate_state.py:123:        print("[PASS] Image sub-block matches cached image_features.npy")
+  scripts\validate_state.py:124:
+  scripts\validate_state.py:125:    if not np.allclose(text_block, cached_text, atol=1e-5):
+  scripts\validate_state.py:126:        errors.append("FAIL: text sub-block does not match cached text_features.npy")
+  scripts\validate_state.py:127:    else:
+  scripts\validate_state.py:128:        print("[PASS] Text sub-block matches cached text_features.npy")
+  scripts\algorithm_comparison\build_comparison_report.py:147:
+  scripts\algorithm_comparison\build_comparison_report.py:148:        numeric_cols = [
+  scripts\algorithm_comparison\build_comparison_report.py:149:            reward_col, discount_col, "oracle_reward",
+  scripts\algorithm_comparison\build_comparison_report.py:150:            "oracle_gap", "oracle_action_match",
+  scripts\algorithm_comparison\build_comparison_report.py:151:        ]
+> scripts\algorithm_comparison\build_comparison_report.py:152:        if not np.isfinite(frame[numeric_cols].to_numpy(dtype=float)).all():
+  scripts\algorithm_comparison\build_comparison_report.py:153:            raise ValueError(f"Non-finite evaluation values in {path.name}")
+  scripts\algorithm_comparison\build_comparison_report.py:154:
+  scripts\algorithm_comparison\build_comparison_report.py:155:        details_frames.append(pd.DataFrame({
+  scripts\algorithm_comparison\build_comparison_report.py:156:            "algorithm": algorithm,
+  scripts\algorithm_comparison\build_comparison_report.py:157:            "split": frame["split"].astype(str),
+  scripts\algorithm_comparison\evaluate_ddpg.py:72:
+  scripts\algorithm_comparison\evaluate_ddpg.py:73:        environment.reset(state=state, product=product)
+  scripts\algorithm_comparison\evaluate_ddpg.py:74:        baseline_sales = float(product.last_monthly_sales)
+  scripts\algorithm_comparison\evaluate_ddpg.py:75:        baseline_margin = environment.observed_outcome.estimated_margin
+  scripts\algorithm_comparison\evaluate_ddpg.py:76:
+> scripts\algorithm_comparison\evaluate_ddpg.py:77:        if baseline_margin is None or not np.isfinite(baseline_margin):
+  scripts\algorithm_comparison\evaluate_ddpg.py:78:            continue
+  scripts\algorithm_comparison\evaluate_ddpg.py:79:
+  scripts\algorithm_comparison\evaluate_ddpg.py:80:        continuous_action, _ = model.predict(state, deterministic=True)
+  scripts\algorithm_comparison\evaluate_ddpg.py:81:        continuous_action = np.asarray(continuous_action).reshape(-1)
+  scripts\algorithm_comparison\evaluate_ddpg.py:82:
+> scripts\algorithm_comparison\evaluate_ddpg.py:83:        if continuous_action.size != 1 or not np.isfinite(continuous_action[0]):
+  scripts\algorithm_comparison\evaluate_ddpg.py:84:            raise ValueError(f"Invalid DDPG action for dataset position {position}")
+  scripts\algorithm_comparison\evaluate_ddpg.py:85:
+  scripts\algorithm_comparison\evaluate_ddpg.py:86:        # Match the continuous adapter's mapping, but restrict the comparison
+  scripts\algorithm_comparison\evaluate_ddpg.py:87:        # to the same eight observed-support discounts used by PPO.
+  scripts\algorithm_comparison\evaluate_ddpg.py:88:        proposed_discount = float(
+  scripts\algorithm_comparison\evaluate_ddpg.py:157:    results_df = pd.DataFrame(results)
+  scripts\algorithm_comparison\evaluate_ddpg.py:158:    if results_df.empty:
+  scripts\algorithm_comparison\evaluate_ddpg.py:159:        raise RuntimeError("No valid DDPG test results were produced.")
+  scripts\algorithm_comparison\evaluate_ddpg.py:160:
+  scripts\algorithm_comparison\evaluate_ddpg.py:161:    numeric_columns = results_df.select_dtypes(include=[np.number]).columns
+> scripts\algorithm_comparison\evaluate_ddpg.py:162:    if not np.isfinite(results_df[numeric_columns].to_numpy()).all():
+  scripts\algorithm_comparison\evaluate_ddpg.py:163:        raise ValueError("Non-finite values detected in evaluation results.")
+  scripts\algorithm_comparison\evaluate_ddpg.py:164:
+  scripts\algorithm_comparison\evaluate_ddpg.py:165:    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+  scripts\algorithm_comparison\evaluate_ddpg.py:166:    results_df.to_csv(OUTPUT, index=False)
+  scripts\algorithm_comparison\evaluate_ddpg.py:167:
+  scripts\algorithm_comparison\evaluate_ddqn.py:115:
+  scripts\algorithm_comparison\evaluate_ddqn.py:116:            environment.reset(state=state, product=product)
+  scripts\algorithm_comparison\evaluate_ddqn.py:117:            baseline_sales = float(product.last_monthly_sales)
+  scripts\algorithm_comparison\evaluate_ddqn.py:118:            baseline_margin = environment.observed_outcome.estimated_margin
+  scripts\algorithm_comparison\evaluate_ddqn.py:119:
+> scripts\algorithm_comparison\evaluate_ddqn.py:120:            if baseline_margin is None or not np.isfinite(baseline_margin):
+  scripts\algorithm_comparison\evaluate_ddqn.py:121:                continue
+  scripts\algorithm_comparison\evaluate_ddqn.py:122:
+  scripts\algorithm_comparison\evaluate_ddqn.py:123:            state_tensor = torch.as_tensor(
+  scripts\algorithm_comparison\evaluate_ddqn.py:124:                state, dtype=torch.float32
+  scripts\algorithm_comparison\evaluate_ddqn.py:125:            ).unsqueeze(0)
+  scripts\algorithm_comparison\evaluate_ddqn.py:126:            q_values = online(state_tensor).cpu().numpy().reshape(-1)
+  scripts\algorithm_comparison\evaluate_ddqn.py:127:
+> scripts\algorithm_comparison\evaluate_ddqn.py:128:            if q_values.shape != (ACTION_DIM,) or not np.isfinite(q_values).all():
+  scripts\algorithm_comparison\evaluate_ddqn.py:129:                raise ValueError(
+  scripts\algorithm_comparison\evaluate_ddqn.py:130:                    f"Invalid DDQN Q-values at dataset position {position}"
+  scripts\algorithm_comparison\evaluate_ddqn.py:131:                )
+  scripts\algorithm_comparison\evaluate_ddqn.py:132:
+  scripts\algorithm_comparison\evaluate_ddqn.py:133:            # Indices 1..8 correspond to discounts 5..40%.
+  scripts\algorithm_comparison\evaluate_ddqn.py:191:    results_df = pd.DataFrame(results)
+  scripts\algorithm_comparison\evaluate_ddqn.py:192:    if results_df.empty:
+  scripts\algorithm_comparison\evaluate_ddqn.py:193:        raise RuntimeError("No valid DDQN test results were produced.")
+  scripts\algorithm_comparison\evaluate_ddqn.py:194:
+  scripts\algorithm_comparison\evaluate_ddqn.py:195:    numeric_columns = results_df.select_dtypes(include=[np.number]).columns
+> scripts\algorithm_comparison\evaluate_ddqn.py:196:    if not np.isfinite(results_df[numeric_columns].to_numpy()).all():
+  scripts\algorithm_comparison\evaluate_ddqn.py:197:        raise ValueError("Non-finite values detected in evaluation results.")
+  scripts\algorithm_comparison\evaluate_ddqn.py:198:
+  scripts\algorithm_comparison\evaluate_ddqn.py:199:    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+  scripts\algorithm_comparison\evaluate_ddqn.py:200:    results_df.to_csv(OUTPUT, index=False)
+  scripts\algorithm_comparison\evaluate_ddqn.py:201:
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:70:        sales = pd.to_numeric(df[sales_col], errors="coerce")
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:71:        base_margin = pd.to_numeric(df[baseline_margin_col], errors="coerce")
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:72:        margin = pd.to_numeric(df[margin_col], errors="coerce")
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:73:
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:74:        valid_sales = (
+> scripts\algorithm_comparison\evaluate_paper_metrics.py:75:            np.isfinite(base_sales) & np.isfinite(sales) & (base_sales > 0)
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:76:        )
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:77:        valid_margin = (
+> scripts\algorithm_comparison\evaluate_paper_metrics.py:78:            np.isfinite(base_margin) & np.isfinite(margin) & (base_margin > 0)
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:79:        )
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:80:        sales_growth = pd.Series(np.nan, index=df.index, dtype=float)
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:81:        margin_growth = pd.Series(np.nan, index=df.index, dtype=float)
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:82:        sales_growth.loc[valid_sales] = (
+  scripts\algorithm_comparison\evaluate_paper_metrics.py:83:            (sales.loc[valid_sales] - base_sales.loc[valid_sales])
+  scripts\algorithm_comparison\evaluate_sac.py:78:
+  scripts\algorithm_comparison\evaluate_sac.py:79:        environment.reset(state=state, product=product)
+  scripts\algorithm_comparison\evaluate_sac.py:80:        baseline_sales = float(product.last_monthly_sales)
+  scripts\algorithm_comparison\evaluate_sac.py:81:        baseline_margin = environment.observed_outcome.estimated_margin
+  scripts\algorithm_comparison\evaluate_sac.py:82:
+> scripts\algorithm_comparison\evaluate_sac.py:83:        if baseline_margin is None or not np.isfinite(baseline_margin):
+  scripts\algorithm_comparison\evaluate_sac.py:84:            continue
+  scripts\algorithm_comparison\evaluate_sac.py:85:
+  scripts\algorithm_comparison\evaluate_sac.py:86:        continuous_action, _ = model.predict(state, deterministic=True)
+  scripts\algorithm_comparison\evaluate_sac.py:87:        continuous_action = np.asarray(continuous_action).reshape(-1)
+  scripts\algorithm_comparison\evaluate_sac.py:88:
+> scripts\algorithm_comparison\evaluate_sac.py:89:        if continuous_action.size != 1 or not np.isfinite(continuous_action[0]):
+  scripts\algorithm_comparison\evaluate_sac.py:90:            raise ValueError(
+  scripts\algorithm_comparison\evaluate_sac.py:91:                f"Invalid SAC action for dataset position {position}"
+  scripts\algorithm_comparison\evaluate_sac.py:92:            )
+  scripts\algorithm_comparison\evaluate_sac.py:93:
+  scripts\algorithm_comparison\evaluate_sac.py:94:        proposed_discount = float(
+  scripts\algorithm_comparison\evaluate_sac.py:165:    results_df = pd.DataFrame(results)
+  scripts\algorithm_comparison\evaluate_sac.py:166:    if results_df.empty:
+  scripts\algorithm_comparison\evaluate_sac.py:167:        raise RuntimeError("No valid SAC test results were produced.")
+  scripts\algorithm_comparison\evaluate_sac.py:168:
+  scripts\algorithm_comparison\evaluate_sac.py:169:    numeric_columns = results_df.select_dtypes(include=[np.number]).columns
+> scripts\algorithm_comparison\evaluate_sac.py:170:    if not np.isfinite(results_df[numeric_columns].to_numpy()).all():
+  scripts\algorithm_comparison\evaluate_sac.py:171:        raise ValueError("Non-finite values detected in evaluation results.")
+  scripts\algorithm_comparison\evaluate_sac.py:172:
+  scripts\algorithm_comparison\evaluate_sac.py:173:    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+  scripts\algorithm_comparison\evaluate_sac.py:174:    results_df.to_csv(OUTPUT, index=False)
+  scripts\algorithm_comparison\evaluate_sac.py:175:
+  src\environment\counterfactual_simulator.py:189:        if state.shape != (STATE_DIM,):
+  src\environment\counterfactual_simulator.py:190:            raise ValueError(
+  src\environment\counterfactual_simulator.py:191:                f"state must have shape ({STATE_DIM},), got {state.shape}. "
+  src\environment\counterfactual_simulator.py:192:                "Ensure the ItaNet-111 state pipeline has been run."
+  src\environment\counterfactual_simulator.py:193:            )
+> src\environment\counterfactual_simulator.py:194:        if not np.all(np.isfinite(state)):
+  src\environment\counterfactual_simulator.py:195:            raise ValueError(
+  src\environment\counterfactual_simulator.py:196:                "state contains NaN or Inf values. "
+> src\environment\counterfactual_simulator.py:197:                "Check that this row is in state_row_indices.npy (13 rows are excluded)."
+  src\environment\counterfactual_simulator.py:198:            )
+  src\environment\counterfactual_simulator.py:199:        return state
+  src\environment\counterfactual_simulator.py:200:
+  src\environment\counterfactual_simulator.py:201:    @staticmethod
+  src\environment\counterfactual_simulator.py:202:    def _validate_discount(discount: Union[int, float]) -> float:
+  src\environment\counterfactual_simulator.py:217:        self,
+  src\environment\counterfactual_simulator.py:218:        state: np.ndarray,
+  src\environment\counterfactual_simulator.py:219:        discount: Union[int, float],
+  src\environment\counterfactual_simulator.py:220:    ) -> float:
+  src\environment\counterfactual_simulator.py:221:        """
+> src\environment\counterfactual_simulator.py:222:        Predict the Estimated Monthly Sales Growth Rate for a single
+  src\environment\counterfactual_simulator.py:223:        (state, discount) pair.
+  src\environment\counterfactual_simulator.py:224:
+  src\environment\counterfactual_simulator.py:225:        Parameters
+  src\environment\counterfactual_simulator.py:226:        ----------
+  src\environment\counterfactual_simulator.py:227:        state : np.ndarray, shape (111,)
+  src\environment\counterfactual_simulator.py:326:
+  src\environment\counterfactual_simulator.py:327:        invalid = [d for d in discounts if float(d) not in [float(b) for b in DISCOUNT_BINS]]
+  src\environment\counterfactual_simulator.py:328:        if invalid:
+  src\environment\counterfactual_simulator.py:329:            raise ValueError(f"Invalid discount values: {invalid}. Must be in {DISCOUNT_BINS}.")
+  src\environment\counterfactual_simulator.py:330:
+> src\environment\counterfactual_simulator.py:331:        if not np.all(np.isfinite(states)):
+  src\environment\counterfactual_simulator.py:332:            raise ValueError("states batch contains NaN or Inf values.")
+  src\environment\counterfactual_simulator.py:333:
+  src\environment\counterfactual_simulator.py:334:        states_t = torch.tensor(states, dtype=torch.float32, device=self.device)
+  src\environment\counterfactual_simulator.py:335:        discounts_t = torch.tensor(discounts, dtype=torch.float32, device=self.device).unsqueeze(1)
+  src\environment\counterfactual_simulator.py:336:
+  src\environment\ppo_dataset.py:16:    source_row_indices: np.ndarray
+  src\environment\ppo_dataset.py:17:
+  src\environment\ppo_dataset.py:18:
+  src\environment\ppo_dataset.py:19:def load_ppo_dataset(
+  src\environment\ppo_dataset.py:20:    state_path: str | Path = "data/processed/state/state.npy",
+> src\environment\ppo_dataset.py:21:    index_path: str | Path = "data/processed/state/state_row_indices.npy",
+  src\environment\ppo_dataset.py:22:    products_path: str | Path = "data/processed/products_clean.parquet",
+  src\environment\ppo_dataset.py:23:) -> PPODataset:
+  src\environment\ppo_dataset.py:24:    """
+  src\environment\ppo_dataset.py:25:    Load states and align them with product-level economic metadata.
+  src\environment\ppo_dataset.py:26:
+  src\environment\ppo_dataset.py:41:    if states.ndim != 2 or states.shape[1] != 111:
+  src\environment\ppo_dataset.py:42:        raise ValueError(
+  src\environment\ppo_dataset.py:43:            f"Expected state matrix shape (N, 111), got {states.shape}"
+  src\environment\ppo_dataset.py:44:        )
+  src\environment\ppo_dataset.py:45:
+> src\environment\ppo_dataset.py:46:    if not np.all(np.isfinite(states)):
+  src\environment\ppo_dataset.py:47:        raise ValueError("State matrix contains NaN or Inf.")
+  src\environment\ppo_dataset.py:48:
+  src\environment\ppo_dataset.py:49:    if np.any(source_indices < 0) or np.any(source_indices >= len(df)):
+  src\environment\ppo_dataset.py:50:        raise ValueError("State row indices contain invalid dataset rows.")
+  src\environment\ppo_dataset.py:51:
+  src\environment\pricing_economics.py:12:    estimated_revenue: float
+  src\environment\pricing_economics.py:13:    estimated_margin: float | None
+  src\environment\pricing_economics.py:14:
+  src\environment\pricing_economics.py:15:
+  src\environment\pricing_economics.py:16:def _validate_finite(value: float, name: str):
+> src\environment\pricing_economics.py:17:    if not np.isfinite(value):
+  src\environment\pricing_economics.py:18:        raise ValueError(
+  src\environment\pricing_economics.py:19:            f"{name} must be finite."
+  src\environment\pricing_economics.py:20:        )
+  src\environment\pricing_economics.py:21:
+  src\environment\pricing_economics.py:22:
+  src\environment\pricing_economics.py:106:
+  src\environment\pricing_economics.py:107:    reference_price = (
+  src\environment\pricing_economics.py:108:        observed_price / denominator
+  src\environment\pricing_economics.py:109:    )
+  src\environment\pricing_economics.py:110:
+> src\environment\pricing_economics.py:111:    if not np.isfinite(reference_price):
+  src\environment\pricing_economics.py:112:        raise ValueError(
+  src\environment\pricing_economics.py:113:            "Reference price is not finite."
+  src\environment\pricing_economics.py:114:        )
+  src\environment\pricing_economics.py:115:
+  src\environment\pricing_economics.py:116:    return float(reference_price)
+  src\environment\pricing_economics.py:144:    price = (
+  src\environment\pricing_economics.py:145:        reference_price
+  src\environment\pricing_economics.py:146:        * (1.0 - discount_percent / 100.0)
+  src\environment\pricing_economics.py:147:    )
+  src\environment\pricing_economics.py:148:
+> src\environment\pricing_economics.py:149:    if price < 0 or not np.isfinite(price):
+  src\environment\pricing_economics.py:150:        raise ValueError(
+  src\environment\pricing_economics.py:151:            "Candidate price is invalid."
+  src\environment\pricing_economics.py:152:        )
+  src\environment\pricing_economics.py:153:
+  src\environment\pricing_economics.py:154:    return float(price)
+  src\environment\pricing_economics.py:192:    sales = max(
+  src\environment\pricing_economics.py:193:        0.0,
+  src\environment\pricing_economics.py:194:        last_monthly_sales * growth_multiplier,
+  src\environment\pricing_economics.py:195:    )
+  src\environment\pricing_economics.py:196:
+> src\environment\pricing_economics.py:197:    if not np.isfinite(sales):
+  src\environment\pricing_economics.py:198:        raise ValueError(
+  src\environment\pricing_economics.py:199:            "Estimated sales are not finite."
+  src\environment\pricing_economics.py:200:        )
+  src\environment\pricing_economics.py:201:
+  src\environment\pricing_economics.py:202:    return float(sales)
+  src\environment\pricing_environment.py:113:            raise ValueError(
+  src\environment\pricing_environment.py:114:                f"state must have shape ({self.STATE_DIM},), "
+  src\environment\pricing_environment.py:115:                f"got {state.shape}"
+  src\environment\pricing_environment.py:116:            )
+  src\environment\pricing_environment.py:117:
+> src\environment\pricing_environment.py:118:        if not np.all(np.isfinite(state)):
+  src\environment\pricing_environment.py:119:            raise ValueError(
+  src\environment\pricing_environment.py:120:                "state contains NaN or Inf"
+  src\environment\pricing_environment.py:121:            )
+  src\environment\pricing_environment.py:122:
+  src\environment\pricing_environment.py:123:        if not isinstance(product, ProductContext):
+  src\models\itanet.py:92:
+  src\models\itanet.py:93:    def __init__(
+  src\models\itanet.py:94:        self,
+  src\models\itanet.py:95:        text_features: Optional[np.ndarray] = None,
+  src\models\itanet.py:96:        attribute_features: Optional[np.ndarray] = None,
+> src\models\itanet.py:97:        image_features: Optional[np.ndarray] = None,
+  src\models\itanet.py:98:        sentiment_features: Optional[np.ndarray] = None,
+  src\models\itanet.py:99:    ):
+  src\models\itanet.py:100:        """
+  src\models\itanet.py:101:        Args:
+  src\models\itanet.py:102:            text_features:
+  src\models\itanet.py:104:
+  src\models\itanet.py:105:            attribute_features:
+  src\models\itanet.py:106:                Shape (N, 47). Structured numerical/categorical
+  src\models\itanet.py:107:                product attributes.
+  src\models\itanet.py:108:
+> src\models\itanet.py:109:            image_features:
+  src\models\itanet.py:110:                Shape (N, 32). ResNet-50 image features projected
+  src\models\itanet.py:111:                to 32-D.
+  src\models\itanet.py:112:
+  src\models\itanet.py:113:            sentiment_features:
+  src\models\itanet.py:114:                Shape (N, 10). Review sentiment representation.
+  src\models\itanet.py:115:                Not available in the current implementation.
+  src\models\itanet.py:116:        """
+  src\models\itanet.py:117:        self.text_features = text_features
+  src\models\itanet.py:118:        self.attribute_features = attribute_features
+> src\models\itanet.py:119:        self.image_features = image_features
+  src\models\itanet.py:120:        self.sentiment_features = sentiment_features
+  src\models\itanet.py:121:
+  src\models\itanet.py:122:        self._validate_inputs()
+  src\models\itanet.py:123:
+  src\models\itanet.py:124:    def _validate_inputs(self):
+  src\models\itanet.py:125:        """Validate feature dimensions and row alignment."""
+  src\models\itanet.py:126:
+  src\models\itanet.py:127:        sizes = []
+  src\models\itanet.py:128:
+> src\models\itanet.py:129:        if self.image_features is not None:
+  src\models\itanet.py:130:            if (
+> src\models\itanet.py:131:                self.image_features.ndim != 2
+> src\models\itanet.py:132:                or self.image_features.shape[1] != IMAGE_DIM
+  src\models\itanet.py:133:            ):
+  src\models\itanet.py:134:                raise ValueError(
+> src\models\itanet.py:135:                    f"image_features must be "
+  src\models\itanet.py:136:                    f"(N, {IMAGE_DIM}), "
+> src\models\itanet.py:137:                    f"got {self.image_features.shape}"
+  src\models\itanet.py:138:                )
+  src\models\itanet.py:139:
+> src\models\itanet.py:140:            sizes.append(len(self.image_features))
+  src\models\itanet.py:141:
+  src\models\itanet.py:142:        if self.text_features is not None:
+  src\models\itanet.py:143:            if (
+  src\models\itanet.py:144:                self.text_features.ndim != 2
+  src\models\itanet.py:145:                or self.text_features.shape[1] != TEXT_DIM
+  src\models\itanet.py:203:        """
+  src\models\itanet.py:204:
+  src\models\itanet.py:205:        parts = []
+  src\models\itanet.py:206:
+  src\models\itanet.py:207:        # Paper ordering
+> src\models\itanet.py:208:        if self.image_features is not None:
+> src\models\itanet.py:209:            parts.append(self.image_features)
+  src\models\itanet.py:210:
+  src\models\itanet.py:211:        if self.text_features is not None:
+  src\models\itanet.py:212:            parts.append(self.text_features)
+  src\models\itanet.py:213:
+  src\models\itanet.py:214:        if self.sentiment_features is not None:
+  src\models\itanet.py:247:    def state_dim(self) -> int:
+  src\models\itanet.py:248:        """Return the state dimension for the supplied modalities."""
+  src\models\itanet.py:249:
+  src\models\itanet.py:250:        dim = 0
+  src\models\itanet.py:251:
+> src\models\itanet.py:252:        if self.image_features is not None:
+  src\models\itanet.py:253:            dim += IMAGE_DIM
+  src\models\itanet.py:254:
+  src\models\itanet.py:255:        if self.text_features is not None:
+  src\models\itanet.py:256:            dim += TEXT_DIM
+  src\models\itanet.py:257:
+  src\models\itanet.py:268:        Return a structured report describing the current
+  src\models\itanet.py:269:        modality configuration.
+  src\models\itanet.py:270:        """
+  src\models\itanet.py:271:
+  src\models\itanet.py:272:        return {
+> src\models\itanet.py:273:            "image": self.image_features is not None,
+  src\models\itanet.py:274:            "text": self.text_features is not None,
+  src\models\itanet.py:275:            "sentiment": self.sentiment_features is not None,
+  src\models\itanet.py:276:            "attributes": self.attribute_features is not None,
+  src\models\itanet.py:277:            "state_dim": self.state_dim,
+  src\models\itanet.py:278:            "paper_state_dim": PAPER_STATE_DIM,
+
+
+

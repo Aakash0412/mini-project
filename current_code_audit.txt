@@ -1,0 +1,2924 @@
+
+================================================================================
+FILE: .\src\models\itanet.py
+================================================================================
+"""
+ItaNet: Image + Text + Attributes Fusion Network
+-------------------------------------------------
+Paper:
+"A Multimodal Deep Reinforcement Learning Framework for Dynamic
+Pricing Optimisation in E-Commerce"
+Liu et al., IEEE Access 2026
+
+This module implements the ItaNet state representation.
+
+Paper architecture:
+    Image  (32-D)  |
+    Title  (32-D)  | ---> concat ---> 121-D state
+    Reviews(10-D)  |
+    Attrs  (47-D)  |
+
+Current local implementation:
+    Image  (32-D)  |
+    Title  (32-D)  | ---> concat ---> 111-D state
+    Attrs  (47-D)  |
+
+The 10-D review-sentiment modality is not included because the
+publicly released dataset does not provide the review text/database
+required to reproduce that component.
+
+Therefore:
+
+    Paper state       = 32 + 32 + 10 + 47 = 121-D
+    Current state     = 32 + 32 + 47      = 111-D
+
+This is an API-independent local adaptation of the paper's
+multimodal representation. No synthetic sentiment features are
+introduced.
+
+Fusion mechanism:
+    Direct concatenation in the paper-defined modality order:
+        [Image || Text || Sentiment || Attributes]
+
+For the current implementation:
+        [Image || Text || Attributes]
+"""
+
+import numpy as np
+from typing import Optional
+
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Paper-specified modality dimensions
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+IMAGE_DIM = 32
+TEXT_DIM = 32
+SENTIMENT_DIM = 10
+ATTRIBUTE_DIM = 47
+
+# Full state defined by the paper:
+# 32 + 32 + 10 + 47 = 121
+PAPER_STATE_DIM = (
+    IMAGE_DIM
+    + TEXT_DIM
+    + SENTIMENT_DIM
+    + ATTRIBUTE_DIM
+)
+
+# Current reproducible local state:
+# 32 + 32 + 47 = 111
+#
+# Sentiment is omitted because the required review text/database
+# is not available in the released dataset.
+AVAILABLE_STATE_DIM = (
+    IMAGE_DIM
+    + TEXT_DIM
+    + ATTRIBUTE_DIM
+)
+
+
+class ItaNetStateBuilder:
+    """
+    Constructs the ItaNet state vector by concatenating the
+    available modality feature arrays.
+
+    Paper formulation:
+        s_t,i = [c_i || d_t,i]
+
+    Fusion:
+        Direct concatenation; no cross-modal attention or
+        additional fusion layer is introduced.
+
+    Current target configuration:
+        Image (32) + Text (32) + Attributes (47) = 111-D
+    """
+
+    def __init__(
+        self,
+        text_features: Optional[np.ndarray] = None,
+        attribute_features: Optional[np.ndarray] = None,
+        image_features: Optional[np.ndarray] = None,
+        sentiment_features: Optional[np.ndarray] = None,
+    ):
+        """
+        Args:
+            text_features:
+                Shape (N, 32). Product-title embeddings.
+
+            attribute_features:
+                Shape (N, 47). Structured numerical/categorical
+                product attributes.
+
+            image_features:
+                Shape (N, 32). ResNet-50 image features projected
+                to 32-D.
+
+            sentiment_features:
+                Shape (N, 10). Review sentiment representation.
+                Not available in the current implementation.
+        """
+        self.text_features = text_features
+        self.attribute_features = attribute_features
+        self.image_features = image_features
+        self.sentiment_features = sentiment_features
+
+        self._validate_inputs()
+
+    def _validate_inputs(self):
+        """Validate feature dimensions and row alignment."""
+
+        sizes = []
+
+        if self.image_features is not None:
+            if (
+                self.image_features.ndim != 2
+                or self.image_features.shape[1] != IMAGE_DIM
+            ):
+                raise ValueError(
+                    f"image_features must be "
+                    f"(N, {IMAGE_DIM}), "
+                    f"got {self.image_features.shape}"
+                )
+
+            sizes.append(len(self.image_features))
+
+        if self.text_features is not None:
+            if (
+                self.text_features.ndim != 2
+                or self.text_features.shape[1] != TEXT_DIM
+            ):
+                raise ValueError(
+                    f"text_features must be "
+                    f"(N, {TEXT_DIM}), "
+                    f"got {self.text_features.shape}"
+                )
+
+            sizes.append(len(self.text_features))
+
+        if self.sentiment_features is not None:
+            if (
+                self.sentiment_features.ndim != 2
+                or self.sentiment_features.shape[1] != SENTIMENT_DIM
+            ):
+                raise ValueError(
+                    f"sentiment_features must be "
+                    f"(N, {SENTIMENT_DIM}), "
+                    f"got {self.sentiment_features.shape}"
+                )
+
+            sizes.append(len(self.sentiment_features))
+
+        if self.attribute_features is not None:
+            if (
+                self.attribute_features.ndim != 2
+                or self.attribute_features.shape[1] != ATTRIBUTE_DIM
+            ):
+                raise ValueError(
+                    f"attribute_features must be "
+                    f"(N, {ATTRIBUTE_DIM}), "
+                    f"got {self.attribute_features.shape}"
+                )
+
+            sizes.append(len(self.attribute_features))
+
+        if len(set(sizes)) > 1:
+            raise ValueError(
+                f"All feature arrays must have the same N. "
+                f"Got sizes: {sizes}"
+            )
+
+    def build(self) -> np.ndarray:
+        """
+        Concatenate available modalities in paper-defined order:
+
+            Image â†’ Text â†’ Sentiment â†’ Attributes
+
+        Current intended configuration:
+
+            Image â†’ Text â†’ Attributes
+
+        Unavailable modalities are omitted rather than zero-padded.
+
+        Returns:
+            np.ndarray:
+                State matrix of shape (N, D), where D is the sum
+                of the included modality dimensions.
+        """
+
+        parts = []
+
+        # Paper ordering
+        if self.image_features is not None:
+            parts.append(self.image_features)
+
+        if self.text_features is not None:
+            parts.append(self.text_features)
+
+        if self.sentiment_features is not None:
+            parts.append(self.sentiment_features)
+
+        if self.attribute_features is not None:
+            parts.append(self.attribute_features)
+
+        if not parts:
+            raise ValueError(
+                "No feature modalities provided. "
+                "Cannot build state."
+            )
+
+        state = np.concatenate(parts, axis=1)
+
+        # Integrity checks.
+        # Missing image rows are handled by build_state.py before
+        # calling build(). Therefore the builder itself expects
+        # complete feature rows.
+        if np.isnan(state).any():
+            raise ValueError(
+                "State contains NaN values. "
+                "Incomplete feature rows must be filtered before "
+                "state construction."
+            )
+
+        if np.isinf(state).any():
+            raise ValueError(
+                "State contains Inf values."
+            )
+
+        return state
+
+    @property
+    def state_dim(self) -> int:
+        """Return the state dimension for the supplied modalities."""
+
+        dim = 0
+
+        if self.image_features is not None:
+            dim += IMAGE_DIM
+
+        if self.text_features is not None:
+            dim += TEXT_DIM
+
+        if self.sentiment_features is not None:
+            dim += SENTIMENT_DIM
+
+        if self.attribute_features is not None:
+            dim += ATTRIBUTE_DIM
+
+        return dim
+
+    def modality_report(self) -> dict:
+        """
+        Return a structured report describing the current
+        modality configuration.
+        """
+
+        return {
+            "image": self.image_features is not None,
+            "text": self.text_features is not None,
+            "sentiment": self.sentiment_features is not None,
+            "attributes": self.attribute_features is not None,
+            "state_dim": self.state_dim,
+            "paper_state_dim": PAPER_STATE_DIM,
+            "available_state_dim": AVAILABLE_STATE_DIM,
+            "missing_dims": PAPER_STATE_DIM - self.state_dim,
+        }
+
+================================================================================
+FILE: .\src\models\ppo_agent.py
+================================================================================
+import torch
+import torch.nn as nn
+from torch.distributions import Categorical
+
+
+STATE_DIM = 111
+ACTION_DIM = 9
+
+
+class PPOActor(nn.Module):
+    """
+    PPO policy network.
+
+    Input:
+        111-D ItaNet state
+
+    Output:
+        Probability distribution over 9 discrete discount actions.
+    """
+
+    def __init__(
+        self,
+        state_dim: int = STATE_DIM,
+        action_dim: int = ACTION_DIM,
+    ):
+        super().__init__()
+
+        self.network = nn.Sequential(
+            nn.Linear(state_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, action_dim),
+        )
+
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        logits = self.network(state)
+        return logits
+
+    def get_distribution(
+        self,
+        state: torch.Tensor,
+    ) -> Categorical:
+        logits = self.forward(state)
+        return Categorical(logits=logits)
+
+    def get_action(
+        self,
+        state: torch.Tensor,
+    ):
+        distribution = self.get_distribution(state)
+        action = distribution.sample()
+        log_probability = distribution.log_prob(action)
+
+        return action, log_probability
+
+
+class PPOCritic(nn.Module):
+    """
+    PPO value network.
+
+    Input:
+        111-D ItaNet state
+
+    Output:
+        Scalar state-value estimate V(s).
+    """
+
+    def __init__(
+        self,
+        state_dim: int = STATE_DIM,
+    ):
+        super().__init__()
+
+        self.network = nn.Sequential(
+            nn.Linear(state_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1),
+        )
+
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        return self.network(state).squeeze(-1)
+
+
+class PPOAgent:
+    """
+    PPO actor-critic wrapper for the dynamic pricing environment.
+    """
+
+    def __init__(
+        self,
+        state_dim: int = STATE_DIM,
+        action_dim: int = ACTION_DIM,
+        actor_lr: float = 8e-4,
+        critic_lr: float = 8e-4,
+    ):
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.actor = PPOActor(
+            state_dim=state_dim,
+            action_dim=action_dim,
+        )
+
+        self.critic = PPOCritic(
+            state_dim=state_dim,
+        )
+
+        self.actor_optimizer = torch.optim.Adam(
+            self.actor.parameters(),
+            lr=actor_lr,
+        )
+
+        self.critic_optimizer = torch.optim.Adam(
+            self.critic.parameters(),
+            lr=critic_lr,
+        )
+
+    def select_action(self, state):
+        """
+        Select a discrete pricing action.
+
+        Returns:
+            action
+            log probability
+            state value
+        """
+
+        if not torch.is_tensor(state):
+            state = torch.tensor(
+                state,
+                dtype=torch.float32,
+            )
+
+        if state.ndim == 1:
+            state = state.unsqueeze(0)
+
+        distribution = self.actor.get_distribution(state)
+
+        action = distribution.sample()
+        log_probability = distribution.log_prob(action)
+
+        value = self.critic(state)
+
+        return (
+            int(action.item()),
+            float(log_probability.item()),
+            float(value.item()),
+        )
+
+    def evaluate_actions(
+        self,
+        states: torch.Tensor,
+        actions: torch.Tensor,
+    ):
+        """
+        Evaluate states/actions during PPO optimization.
+        """
+
+        distribution = self.actor.get_distribution(states)
+
+        log_probabilities = distribution.log_prob(actions)
+
+        entropy = distribution.entropy()
+
+        values = self.critic(states)
+
+        return (
+            log_probabilities,
+            values,
+            entropy,
+        )
+
+================================================================================
+FILE: .\src\models\ppo_trainer.py
+================================================================================
+from dataclasses import dataclass
+from typing import Dict, List
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+
+from src.models.ppo_agent import PPOAgent
+
+
+@dataclass
+class PPOConfig:
+    gamma: float = 0.9
+    gae_lambda: float = 0.8
+    clip_epsilon: float = 0.2
+    entropy_coefficient: float = 0.01
+    value_coefficient: float = 0.5
+    batch_size: int = 64
+    update_epochs: int = 4
+    max_grad_norm: float = 0.5
+
+
+class PPORolloutBuffer:
+    """
+    Stores one PPO rollout.
+    """
+
+    def __init__(self):
+        self.states: List[np.ndarray] = []
+        self.actions: List[int] = []
+        self.rewards: List[float] = []
+        self.log_probabilities: List[float] = []
+        self.values: List[float] = []
+        self.dones: List[bool] = []
+
+    def add(
+        self,
+        state,
+        action,
+        reward,
+        log_probability,
+        value,
+        done,
+    ):
+        self.states.append(np.asarray(state, dtype=np.float32))
+        self.actions.append(int(action))
+        self.rewards.append(float(reward))
+        self.log_probabilities.append(float(log_probability))
+        self.values.append(float(value))
+        self.dones.append(bool(done))
+
+    def __len__(self):
+        return len(self.states)
+
+    def clear(self):
+        self.states.clear()
+        self.actions.clear()
+        self.rewards.clear()
+        self.log_probabilities.clear()
+        self.values.clear()
+        self.dones.clear()
+
+
+class PPOTrainer:
+    """
+    PPO optimization logic.
+
+    Implements:
+    - Generalized Advantage Estimation (GAE)
+    - Advantage normalization
+    - PPO clipped policy objective
+    - Value-function objective
+    - Entropy regularization
+    - Gradient clipping
+    """
+
+    def __init__(
+        self,
+        agent: PPOAgent,
+        config: PPOConfig = None,
+        device: str = "cpu",
+    ):
+        self.agent = agent
+        self.config = config or PPOConfig()
+
+        self.device = torch.device(device)
+
+        self.agent.actor.to(self.device)
+        self.agent.critic.to(self.device)
+
+    def compute_gae(
+        self,
+        rewards,
+        values,
+        dones,
+        next_value,
+    ):
+        """
+        Compute GAE advantages and discounted returns.
+        """
+
+        rewards = np.asarray(rewards, dtype=np.float32)
+        values = np.asarray(values, dtype=np.float32)
+        dones = np.asarray(dones, dtype=np.float32)
+
+        advantages = np.zeros_like(rewards)
+
+        gae = 0.0
+
+        for step in reversed(range(len(rewards))):
+            if step == len(rewards) - 1:
+                next_non_terminal = 1.0 - dones[step]
+                next_value_step = next_value
+            else:
+                next_non_terminal = 1.0 - dones[step]
+                next_value_step = values[step + 1]
+
+            delta = (
+                rewards[step]
+                + self.config.gamma
+                * next_value_step
+                * next_non_terminal
+                - values[step]
+            )
+
+            gae = (
+                delta
+                + self.config.gamma
+                * self.config.gae_lambda
+                * next_non_terminal
+                * gae
+            )
+
+            advantages[step] = gae
+
+        returns = advantages + values
+
+        return advantages, returns
+
+    def update(
+        self,
+        buffer: PPORolloutBuffer,
+        next_value: float = 0.0,
+    ) -> Dict[str, float]:
+        """
+        Perform PPO optimization over a collected rollout.
+        """
+
+        if len(buffer) == 0:
+            raise ValueError("Cannot update PPO with an empty buffer.")
+
+        states = torch.tensor(
+            np.asarray(buffer.states),
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        actions = torch.tensor(
+            np.asarray(buffer.actions),
+            dtype=torch.long,
+            device=self.device,
+        )
+
+        old_log_probabilities = torch.tensor(
+            np.asarray(buffer.log_probabilities),
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        values = np.asarray(buffer.values, dtype=np.float32)
+
+        advantages, returns = self.compute_gae(
+            rewards=buffer.rewards,
+            values=values,
+            dones=buffer.dones,
+            next_value=float(next_value),
+        )
+
+        advantages = torch.tensor(
+            advantages,
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        returns = torch.tensor(
+            returns,
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        # Normalize advantages for stable PPO optimization.
+        if len(advantages) > 1:
+            advantages = (
+                advantages - advantages.mean()
+            ) / (
+                advantages.std(unbiased=False) + 1e-8
+            )
+
+        dataset_size = len(states)
+
+        actor_losses = []
+        critic_losses = []
+        entropy_values = []
+
+        for _ in range(self.config.update_epochs):
+
+            permutation = torch.randperm(
+                dataset_size,
+                device=self.device,
+            )
+
+            for start in range(
+                0,
+                dataset_size,
+                self.config.batch_size,
+            ):
+                indices = permutation[
+                    start:start + self.config.batch_size
+                ]
+
+                batch_states = states[indices]
+                batch_actions = actions[indices]
+                batch_old_log_probs = old_log_probabilities[indices]
+                batch_advantages = advantages[indices]
+                batch_returns = returns[indices]
+
+                new_log_probs, new_values, entropy = (
+                    self.agent.evaluate_actions(
+                        batch_states,
+                        batch_actions,
+                    )
+                )
+
+                probability_ratio = torch.exp(
+                    new_log_probs - batch_old_log_probs
+                )
+
+                unclipped_objective = (
+                    probability_ratio * batch_advantages
+                )
+
+                clipped_ratio = torch.clamp(
+                    probability_ratio,
+                    1.0 - self.config.clip_epsilon,
+                    1.0 + self.config.clip_epsilon,
+                )
+
+                clipped_objective = (
+                    clipped_ratio * batch_advantages
+                )
+
+                actor_loss = -torch.min(
+                    unclipped_objective,
+                    clipped_objective,
+                ).mean()
+
+                critic_loss = F.mse_loss(
+                    new_values,
+                    batch_returns,
+                )
+
+                entropy_mean = entropy.mean()
+
+                total_loss = (
+                    actor_loss
+                    + self.config.value_coefficient * critic_loss
+                    - self.config.entropy_coefficient * entropy_mean
+                )
+
+                self.agent.actor_optimizer.zero_grad()
+                self.agent.critic_optimizer.zero_grad()
+
+                total_loss.backward()
+
+                torch.nn.utils.clip_grad_norm_(
+                    self.agent.actor.parameters(),
+                    self.config.max_grad_norm,
+                )
+
+                torch.nn.utils.clip_grad_norm_(
+                    self.agent.critic.parameters(),
+                    self.config.max_grad_norm,
+                )
+
+                self.agent.actor_optimizer.step()
+                self.agent.critic_optimizer.step()
+
+                actor_losses.append(float(actor_loss.item()))
+                critic_losses.append(float(critic_loss.item()))
+                entropy_values.append(float(entropy_mean.item()))
+
+        return {
+            "actor_loss": float(np.mean(actor_losses)),
+            "critic_loss": float(np.mean(critic_losses)),
+            "entropy": float(np.mean(entropy_values)),
+            "mean_advantage": float(advantages.mean().item()),
+            "mean_return": float(returns.mean().item()),
+            "samples": float(dataset_size),
+        }
+
+================================================================================
+FILE: .\src\environment\reward.py
+================================================================================
+"""
+Phase 9: Reward Function
+
+Implements the reward formulation used by the base paper:
+
+    r_t = alpha * Delta_M_t + beta * Delta_Q_t
+
+where:
+    Delta_M_t = change in margin-related objective
+    Delta_Q_t = change in sales/quantity-related objective
+
+Important:
+The current Amazon dataset does not provide reliable product-cost
+variables required to derive true profit/margin. Therefore this module
+does NOT fabricate cost values.
+
+The reward function accepts the already-computed margin and quantity
+changes as inputs. The pricing environment is responsible for providing
+those values when sufficient information is available.
+"""
+
+from dataclasses import dataclass
+from typing import Dict
+
+
+@dataclass(frozen=True)
+class RewardConfig:
+    """Configuration for the paper-style reward."""
+
+    name: str
+    alpha: float
+    beta: float
+
+    def __post_init__(self) -> None:
+        if self.alpha < 0 or self.beta < 0:
+            raise ValueError("alpha and beta must be non-negative.")
+
+        if abs((self.alpha + self.beta) - 1.0) > 1e-8:
+            raise ValueError("alpha + beta must equal 1.")
+
+
+# Paper-aligned reward configurations.
+SALES_REWARD = RewardConfig(
+    name="sales",
+    alpha=0.2,
+    beta=0.8,
+)
+
+BALANCED_REWARD = RewardConfig(
+    name="balanced",
+    alpha=0.5,
+    beta=0.5,
+)
+
+PROFIT_REWARD = RewardConfig(
+    name="profit",
+    alpha=0.8,
+    beta=0.2,
+)
+
+
+REWARD_CONFIGS: Dict[str, RewardConfig] = {
+    "sales": SALES_REWARD,
+    "balanced": BALANCED_REWARD,
+    "profit": PROFIT_REWARD,
+}
+
+
+def get_reward_config(name: str) -> RewardConfig:
+    """
+    Return a predefined reward configuration.
+
+    Parameters
+    ----------
+    name:
+        One of: "sales", "balanced", "profit".
+    """
+    key = str(name).strip().lower()
+
+    if key not in REWARD_CONFIGS:
+        raise ValueError(
+            f"Unknown reward configuration '{name}'. "
+            f"Available configurations: {list(REWARD_CONFIGS.keys())}"
+        )
+
+    return REWARD_CONFIGS[key]
+
+
+def calculate_reward(
+    delta_margin: float,
+    delta_quantity: float,
+    config: RewardConfig = SALES_REWARD,
+) -> float:
+    """
+    Calculate the paper-style weighted reward.
+
+    Formula:
+
+        reward = alpha * Delta_M + beta * Delta_Q
+
+    Parameters
+    ----------
+    delta_margin:
+        Change in the margin-related objective.
+
+    delta_quantity:
+        Change in the sales/quantity-related objective.
+
+    config:
+        Reward configuration containing alpha and beta.
+
+    Returns
+    -------
+    float
+        Scalar reward.
+    """
+
+    reward = (
+        config.alpha * float(delta_margin)
+        + config.beta * float(delta_quantity)
+    )
+
+    return float(reward)
+
+
+def calculate_reward_from_config(
+    delta_margin: float,
+    delta_quantity: float,
+    config_name: str = "sales",
+) -> float:
+    """
+    Convenience wrapper using a named reward configuration.
+    """
+
+    config = get_reward_config(config_name)
+
+    return calculate_reward(
+        delta_margin=delta_margin,
+        delta_quantity=delta_quantity,
+        config=config,
+    )
+
+
+def reward_breakdown(
+    delta_margin: float,
+    delta_quantity: float,
+    config: RewardConfig = SALES_REWARD,
+) -> Dict[str, float]:
+    """
+    Return the individual reward contributions.
+
+    Useful for debugging and experiment reporting.
+    """
+
+    margin_component = config.alpha * float(delta_margin)
+    quantity_component = config.beta * float(delta_quantity)
+
+    return {
+        "alpha": config.alpha,
+        "beta": config.beta,
+        "delta_margin": float(delta_margin),
+        "delta_quantity": float(delta_quantity),
+        "margin_component": float(margin_component),
+        "quantity_component": float(quantity_component),
+        "reward": float(margin_component + quantity_component),
+    }
+
+================================================================================
+FILE: .\src\environment\pricing_economics.py
+================================================================================
+from dataclasses import dataclass
+
+import numpy as np
+
+
+@dataclass(frozen=True)
+class PricingOutcome:
+    discount_percent: float
+    reference_price: float
+    candidate_price: float
+    estimated_sales: float
+    estimated_revenue: float
+    estimated_margin: float | None
+
+
+def _validate_finite(value: float, name: str):
+    if not np.isfinite(value):
+        raise ValueError(
+            f"{name} must be finite."
+        )
+
+
+def validate_inputs(
+    observed_price: float,
+    observed_discount: float,
+    last_monthly_sales: float,
+    gross_margin_rate: float | None,
+    predicted_growth_rate: float,
+):
+    _validate_finite(
+        observed_price,
+        "Observed price",
+    )
+
+    _validate_finite(
+        observed_discount,
+        "Observed discount",
+    )
+
+    _validate_finite(
+        last_monthly_sales,
+        "Last monthly sales",
+    )
+
+    _validate_finite(
+        predicted_growth_rate,
+        "Predicted growth rate",
+    )
+
+    if observed_price <= 0:
+        raise ValueError(
+            "Observed price must be positive."
+        )
+
+    if not 0 <= observed_discount <= 100:
+        raise ValueError(
+            "Observed discount must be between 0 and 100."
+        )
+
+    if last_monthly_sales < 0:
+        raise ValueError(
+            "Last monthly sales cannot be negative."
+        )
+
+    if gross_margin_rate is not None:
+        _validate_finite(
+            gross_margin_rate,
+            "Gross margin rate",
+        )
+
+
+def reconstruct_reference_price(
+    observed_price: float,
+    observed_discount: float,
+) -> float:
+    """
+    Reconstruct an approximate pre-discount reference price.
+
+    This is a dataset-derived pricing proxy,
+    not a product-cost estimate.
+    """
+
+    _validate_finite(
+        observed_price,
+        "Observed price",
+    )
+
+    _validate_finite(
+        observed_discount,
+        "Observed discount",
+    )
+
+    if observed_price <= 0:
+        raise ValueError(
+            "Observed price must be positive."
+        )
+
+    if not 0 <= observed_discount < 100:
+        raise ValueError(
+            "Observed discount must be between 0 and 99.999."
+        )
+
+    denominator = (
+        1.0 - observed_discount / 100.0
+    )
+
+    reference_price = (
+        observed_price / denominator
+    )
+
+    if not np.isfinite(reference_price):
+        raise ValueError(
+            "Reference price is not finite."
+        )
+
+    return float(reference_price)
+
+
+def candidate_price(
+    reference_price: float,
+    discount_percent: float,
+) -> float:
+
+    _validate_finite(
+        reference_price,
+        "Reference price",
+    )
+
+    _validate_finite(
+        discount_percent,
+        "Candidate discount",
+    )
+
+    if reference_price <= 0:
+        raise ValueError(
+            "Reference price must be positive."
+        )
+
+    if not 0 <= discount_percent <= 100:
+        raise ValueError(
+            "Candidate discount must be between 0 and 100."
+        )
+
+    price = (
+        reference_price
+        * (1.0 - discount_percent / 100.0)
+    )
+
+    if price < 0 or not np.isfinite(price):
+        raise ValueError(
+            "Candidate price is invalid."
+        )
+
+    return float(price)
+
+
+def estimated_sales(
+    last_monthly_sales: float,
+    predicted_growth_rate: float,
+) -> float:
+    """
+    Convert predicted sales-growth rate into estimated
+    monthly sales.
+
+    Example:
+        100 sales + 20% growth -> 120 estimated sales.
+
+    Growth below -100% is bounded at zero because
+    negative sales are not physically meaningful.
+    """
+
+    _validate_finite(
+        last_monthly_sales,
+        "Last monthly sales",
+    )
+
+    _validate_finite(
+        predicted_growth_rate,
+        "Predicted growth rate",
+    )
+
+    if last_monthly_sales < 0:
+        raise ValueError(
+            "Last monthly sales cannot be negative."
+        )
+
+    growth_multiplier = (
+        1.0
+        + predicted_growth_rate / 100.0
+    )
+
+    sales = max(
+        0.0,
+        last_monthly_sales * growth_multiplier,
+    )
+
+    if not np.isfinite(sales):
+        raise ValueError(
+            "Estimated sales are not finite."
+        )
+
+    return float(sales)
+
+
+def calculate_pricing_outcome(
+    observed_price: float,
+    observed_discount: float,
+    last_monthly_sales: float,
+    predicted_growth_rate: float,
+    candidate_discount: float,
+    gross_margin_rate: float | None = None,
+) -> PricingOutcome:
+
+    validate_inputs(
+        observed_price=observed_price,
+        observed_discount=observed_discount,
+        last_monthly_sales=last_monthly_sales,
+        gross_margin_rate=gross_margin_rate,
+        predicted_growth_rate=predicted_growth_rate,
+    )
+
+    reference_price = reconstruct_reference_price(
+        observed_price=observed_price,
+        observed_discount=observed_discount,
+    )
+
+    price = candidate_price(
+        reference_price=reference_price,
+        discount_percent=candidate_discount,
+    )
+
+    sales = estimated_sales(
+        last_monthly_sales=last_monthly_sales,
+        predicted_growth_rate=predicted_growth_rate,
+    )
+
+    revenue = price * sales
+
+    if gross_margin_rate is None:
+        margin = None
+    else:
+        margin = (
+            revenue
+            * gross_margin_rate
+            / 100.0
+        )
+
+    return PricingOutcome(
+        discount_percent=float(candidate_discount),
+        reference_price=reference_price,
+        candidate_price=price,
+        estimated_sales=sales,
+        estimated_revenue=float(revenue),
+        estimated_margin=(
+            None
+            if margin is None
+            else float(margin)
+        ),
+    )
+
+================================================================================
+FILE: .\scripts\build_state.py
+================================================================================
+"""
+Phase 4 â€” Build the ItaNet-111 State Vector.
+
+Current implementation:
+    Image      : 32-D
+    Text       : 32-D
+    Attributes : 47-D
+    Sentiment  : unavailable
+
+Total:
+    32 + 32 + 47 = 111-D
+
+The original paper defines a 121-D state by additionally including
+10-D review sentiment. The public dataset does not provide the
+required review text/database, so sentiment is intentionally omitted.
+
+Image features have already been extracted locally using ResNet-50
+and are loaded from:
+    data/processed/features/image_features.npy
+
+Rows with unavailable image features are preserved in the master
+row alignment but marked invalid for complete-state predictor
+training.
+"""
+
+import sys
+import os
+import json
+
+import numpy as np
+import pandas as pd
+
+# Allow importing from src/
+sys.path.insert(
+    0,
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+from src.models.itanet import (
+    ItaNetStateBuilder,
+    PAPER_STATE_DIM,
+    AVAILABLE_STATE_DIM,
+)
+
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Paths
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+FEATURE_DIR = "data/processed/features"
+STATE_DIR = "data/processed/state"
+
+TEXT_PATH = os.path.join(FEATURE_DIR, "text_features.npy")
+ATTRIBUTE_PATH = os.path.join(FEATURE_DIR, "attribute_features.npy")
+IMAGE_PATH = os.path.join(FEATURE_DIR, "image_features.npy")
+
+INDEX_PATH = os.path.join(FEATURE_DIR, "feature_index.parquet")
+CLEAN_DATA_PATH = "data/processed/products_clean.parquet"
+
+
+def build_state():
+    print("=" * 60)
+    print("PHASE 4 â€” ItaNet-111 State Construction")
+    print("=" * 60)
+
+    os.makedirs(STATE_DIR, exist_ok=True)
+    os.makedirs("reports", exist_ok=True)
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Load feature arrays
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    print("\nLoading feature arrays...")
+
+    text_features = np.load(TEXT_PATH)
+    attribute_features = np.load(ATTRIBUTE_PATH)
+    image_features = np.load(IMAGE_PATH)
+
+    print(f"  Text       : {text_features.shape}")
+    print(f"  Attributes : {attribute_features.shape}")
+    print(f"  Image      : {image_features.shape}")
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Basic alignment validation
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    n_rows = len(text_features)
+
+    if len(attribute_features) != n_rows:
+        raise ValueError(
+            "Feature row mismatch: text and attributes have "
+            f"different row counts: "
+            f"{len(text_features)} vs {len(attribute_features)}"
+        )
+
+    if len(image_features) != n_rows:
+        raise ValueError(
+            "Feature row mismatch: image features contain "
+            f"{len(image_features)} rows but expected {n_rows}"
+        )
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Detect incomplete image rows
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    image_valid_mask = np.isfinite(image_features).all(axis=1)
+
+    invalid_image_mask = ~image_valid_mask
+
+    valid_count = int(image_valid_mask.sum())
+    invalid_count = int(invalid_image_mask.sum())
+
+    print("\nImage feature validity:")
+    print(f"  Valid rows   : {valid_count}")
+    print(f"  Invalid rows : {invalid_count}")
+
+    if invalid_count:
+        invalid_indices = np.flatnonzero(invalid_image_mask)
+
+        print(
+            "  Invalid row indices:",
+            invalid_indices.tolist()
+        )
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Build state only from complete rows
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    #
+    # ItaNetStateBuilder intentionally rejects NaNs.
+    # Therefore we construct the complete-state matrix only from
+    # rows with valid image features.
+    #
+    # The original row indices are preserved separately so that
+    # downstream training/evaluation can remain aligned with the
+    # source dataset.
+
+    print("\nConstructing 111-D state...")
+
+    builder = ItaNetStateBuilder(
+        image_features=image_features[image_valid_mask],
+        text_features=text_features[image_valid_mask],
+        attribute_features=attribute_features[image_valid_mask],
+        sentiment_features=None,
+    )
+
+    report = builder.modality_report()
+
+    print("\nModality report:")
+    for key, value in report.items():
+        print(f"  {key}: {value}")
+
+    state_valid = builder.build()
+
+    print(f"\nComplete state shape: {state_valid.shape}")
+
+    if state_valid.shape[1] != AVAILABLE_STATE_DIM:
+        raise ValueError(
+            f"Expected {AVAILABLE_STATE_DIM}-D state, "
+            f"got {state_valid.shape[1]}-D"
+        )
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Save complete state
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    np.save(
+        os.path.join(STATE_DIR, "state.npy"),
+        state_valid,
+    )
+
+    print(
+        f"Saved: {os.path.join(STATE_DIR, 'state.npy')}"
+    )
+
+    # Preserve source row identity.
+    valid_row_indices = np.flatnonzero(image_valid_mask)
+
+    np.save(
+        os.path.join(STATE_DIR, "state_row_indices.npy"),
+        valid_row_indices,
+    )
+
+    print(
+        f"Saved: {os.path.join(STATE_DIR, 'state_row_indices.npy')}"
+    )
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Load source index and cleaned dataset
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    index = pd.read_parquet(INDEX_PATH)
+
+    if len(index) != n_rows:
+        raise ValueError(
+            f"Feature index contains {len(index)} rows, "
+            f"expected {n_rows}"
+        )
+
+    df_clean = pd.read_parquet(
+        CLEAN_DATA_PATH
+    ).reset_index(drop=True)
+
+    if len(df_clean) != n_rows:
+        raise ValueError(
+            f"Clean dataset contains {len(df_clean)} rows, "
+            f"expected {n_rows}"
+        )
+
+    if not (index["ASIN"] == df_clean["ASIN"]).all():
+        raise AssertionError(
+            "ASIN alignment mismatch between feature index and clean dataset"
+        )
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Chronological split masks
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    train_mask_all = df_clean["MonthNum"].isin(
+        [1, 2, 3, 4, 5, 6]
+    ).values
+
+    val_mask_all = df_clean["MonthNum"].isin(
+        [7, 8]
+    ).values
+
+    test_mask_all = df_clean["MonthNum"].isin(
+        [9, 10]
+    ).values
+
+    # Combine chronological split with complete-state validity.
+    train_mask = train_mask_all & image_valid_mask
+    val_mask = val_mask_all & image_valid_mask
+    test_mask = test_mask_all & image_valid_mask
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Convert full-row masks to state-row positions
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    state_train_mask = train_mask[image_valid_mask]
+    state_val_mask = val_mask[image_valid_mask]
+    state_test_mask = test_mask[image_valid_mask]
+
+    state_train = state_valid[state_train_mask]
+    state_val = state_valid[state_val_mask]
+    state_test = state_valid[state_test_mask]
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Save split-aligned states
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    np.save(
+        os.path.join(STATE_DIR, "state_train.npy"),
+        state_train,
+    )
+
+    np.save(
+        os.path.join(STATE_DIR, "state_val.npy"),
+        state_val,
+    )
+
+    np.save(
+        os.path.join(STATE_DIR, "state_test.npy"),
+        state_test,
+    )
+
+    print("\nSplit state shapes:")
+    print(f"  Train : {state_train.shape}")
+    print(f"  Val   : {state_val.shape}")
+    print(f"  Test  : {state_test.shape}")
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Save validity information
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    validity_df = pd.DataFrame(
+        {
+            "row_index": np.arange(n_rows),
+            "ASIN": df_clean["ASIN"].values,
+            "image_features_valid": image_valid_mask,
+            "complete_state_valid": image_valid_mask,
+            "invalid_reason": np.where(image_valid_mask, "None", "Missing Image Feature"),
+            "split": np.select(
+                [
+                    train_mask_all,
+                    val_mask_all,
+                    test_mask_all,
+                ],
+                [
+                    "train",
+                    "validation",
+                    "test",
+                ],
+                default="unknown",
+            ),
+        }
+    )
+
+    validity_path = os.path.join(
+        STATE_DIR,
+        "state_validity.csv",
+    )
+
+    validity_df.to_csv(
+        validity_path,
+        index=False,
+    )
+
+    print(f"\nSaved: {validity_path}")
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Leakage checks
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    train_months = df_clean.loc[
+        train_mask_all,
+        "MonthNum"
+    ].unique()
+
+    val_months = df_clean.loc[
+        val_mask_all,
+        "MonthNum"
+    ].unique()
+
+    test_months = df_clean.loc[
+        test_mask_all,
+        "MonthNum"
+    ].unique()
+
+    if not (max(train_months) < min(val_months)):
+        raise AssertionError(
+            "LEAKAGE: train overlaps validation"
+        )
+
+    if not (max(val_months) < min(test_months)):
+        raise AssertionError(
+            "LEAKAGE: validation overlaps test"
+        )
+
+    print("\nChronological leakage check PASSED.")
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # State integrity checks
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    if np.isnan(state_valid).any():
+        raise AssertionError(
+            "State contains NaN values"
+        )
+
+    if np.isinf(state_valid).any():
+        raise AssertionError(
+            "State contains Inf values"
+        )
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Validation statistics
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    stats = {
+        "implementation": "ItaNet-111",
+        "num_source_samples": int(n_rows),
+        "num_complete_state_samples": int(len(state_valid)),
+        "num_incomplete_samples": int(invalid_count),
+
+        "state_dimension": int(state_valid.shape[1]),
+        "paper_state_dimension": int(PAPER_STATE_DIM),
+        "available_state_dimension": int(AVAILABLE_STATE_DIM),
+        "missing_dimensions": int(
+            PAPER_STATE_DIM - state_valid.shape[1]
+        ),
+
+        "modalities_included": [
+            "Image (32)",
+            "Text (32)",
+            "Attributes (47)",
+        ],
+
+        "modalities_missing": [
+            "Sentiment (10)",
+        ],
+
+        "train_samples_complete": int(
+            len(state_train)
+        ),
+        "val_samples_complete": int(
+            len(state_val)
+        ),
+        "test_samples_complete": int(
+            len(state_test)
+        ),
+
+        "train_samples_source": int(
+            train_mask_all.sum()
+        ),
+        "val_samples_source": int(
+            val_mask_all.sum()
+        ),
+        "test_samples_source": int(
+            test_mask_all.sum()
+        ),
+
+        "has_nan": bool(
+            np.isnan(state_valid).any()
+        ),
+        "has_inf": bool(
+            np.isinf(state_valid).any()
+        ),
+
+        "leakage_check": "PASSED",
+
+        "state_mean": float(
+            state_valid.mean()
+        ),
+        "state_std": float(
+            state_valid.std()
+        ),
+        "state_min": float(
+            state_valid.min()
+        ),
+        "state_max": float(
+            state_valid.max()
+        ),
+    }
+
+    validation_path = "reports/state_validation.json"
+
+    with open(validation_path, "w") as f:
+        json.dump(stats, f, indent=4)
+
+    print(f"Saved: {validation_path}")
+
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Human-readable report
+    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    statistics_path = "reports/state_statistics.md"
+
+    with open(statistics_path, "w") as f:
+        f.write("# ItaNet-111 State Statistics\n\n")
+
+        f.write(
+            "The current implementation uses Image + Text + "
+            "Attributes. The 10-D review sentiment modality is "
+            "not included because the required review data is "
+            "not available in the released dataset.\n\n"
+        )
+
+        f.write("| Metric | Value |\n")
+        f.write("|---|---|\n")
+
+        for key, value in stats.items():
+            f.write(f"| {key} | {value} |\n")
+
+    print(f"Saved: {statistics_path}")
+
+    print("\n" + "=" * 60)
+    print("PHASE 4 â€” ItaNet-111 state construction complete.")
+    print("=" * 60)
+
+    return state_valid
+
+
+if __name__ == "__main__":
+    build_state()
+
+================================================================================
+FILE: .\scripts\train_sales_predictor.py
+================================================================================
+"""
+Phase 5: Sales Predictor â€” Training, Evaluation, and Freeze
+
+Architecture (IMPLEMENTATION DECISION â€” not fully specified in paper):
+    Input (80-D: 79-D state + 1-D discount action)
+    â†’ Linear(80, 256) â†’ BatchNorm â†’ ReLU â†’ Dropout(0.2)
+    â†’ Linear(256, 128) â†’ BatchNorm â†’ ReLU â†’ Dropout(0.1)
+    â†’ Linear(128, 64)  â†’ ReLU
+    â†’ Linear(64, 1)
+
+Target: Estimated Monthly Sales Growth Rate (%)
+After training, the model is frozen and saved. PPO will use it as the
+transition/simulation engine during policy optimisation.
+
+Paper principle: Sales predictor is trained first, then frozen before DRL.
+"""
+
+import sys
+import os
+import json
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+# â”€â”€ Paper-defined discount action space â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+DISCOUNT_BINS = [0, 5, 10, 15, 20, 25, 30, 35, 40]  # percent
+
+
+# â”€â”€ Model definition â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+class SalesPredictorMLP(nn.Module):
+    """
+    Lightweight MLP sales predictor.
+
+    IMPLEMENTATION DECISION: Architecture not fully specified in paper.
+    Chosen to be the smallest viable network for 8 GB Apple Silicon.
+    Labelled as IMPLEMENTATION DECISION in all reports.
+    """
+
+    def __init__(self, input_dim: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x).squeeze(-1)
+
+
+# â”€â”€ Data prep â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def prepare_data(state: np.ndarray, df: pd.DataFrame):
+    target = df["Estimated Monthly Sales Growth Rate"].fillna(0.0).values.astype(np.float32)
+    discount = df["Discount"].fillna(0.0).values.astype(np.float32).reshape(-1, 1)
+    X = np.concatenate([state, discount], axis=1).astype(np.float32)
+    return X, target
+
+
+# â”€â”€ Training loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def train(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    device: torch.device,
+    epochs: int = 60,
+    patience: int = 8,
+    lr: float = 1e-3,
+    save_path: str = "models/sales_predictor/best_model.pth",
+):
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=4)
+    criterion = nn.MSELoss()
+
+    best_val_loss = float("inf")
+    patience_counter = 0
+    train_losses, val_losses = [], []
+
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    for epoch in range(1, epochs + 1):
+        # â”€â”€ train â”€â”€
+        model.train()
+        running = 0.0
+        for bx, by in train_loader:
+            bx, by = bx.to(device), by.to(device)
+            optimizer.zero_grad()
+            loss = criterion(model(bx), by)
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+            running += loss.item() * bx.size(0)
+        train_loss = running / len(train_loader.dataset)
+
+        # â”€â”€ val â”€â”€
+        model.eval()
+        val_running = 0.0
+        with torch.no_grad():
+            for bx, by in val_loader:
+                bx, by = bx.to(device), by.to(device)
+                val_running += criterion(model(bx), by).item() * bx.size(0)
+        val_loss = val_running / len(val_loader.dataset)
+
+        scheduler.step(val_loss)
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+
+        if epoch % 5 == 0:
+            print(f"  Epoch {epoch:3d} | train_MSE={train_loss:.4f} | val_MSE={val_loss:.4f}")
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+            torch.save(model.state_dict(), save_path)
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                print(f"  Early stopping at epoch {epoch}")
+                break
+
+    return train_losses, val_losses
+
+
+# â”€â”€ Evaluation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def evaluate(model, loader, device):
+    model.eval()
+    preds, actuals = [], []
+    with torch.no_grad():
+        for bx, by in loader:
+            bx = bx.to(device)
+            preds.extend(model(bx).cpu().numpy())
+            actuals.extend(by.numpy())
+    return np.array(preds), np.array(actuals)
+
+
+# â”€â”€ Counterfactual sanity check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def counterfactual_sanity_check(
+    model, state_test, df_test, device, n_products=10, out_dir="reports/sales_response_curves"
+):
+    """
+    For a sample of products, predict sales growth under each discount tier.
+    Detects: NaN, constant predictions, extreme values, instability.
+    """
+    os.makedirs(out_dir, exist_ok=True)
+    model.eval()
+
+    sample_idx = np.random.default_rng(42).choice(len(state_test), size=min(n_products, len(state_test)), replace=False)
+
+    issues = []
+
+    fig, axes = plt.subplots(2, 5, figsize=(18, 6))
+    axes = axes.flatten()
+
+    for plot_i, idx in enumerate(sample_idx):
+        s = state_test[idx]
+        responses = []
+
+        for disc in DISCOUNT_BINS:
+            inp = np.concatenate([s, [disc]], axis=0).astype(np.float32)
+            with torch.no_grad():
+                inp_t = torch.tensor(inp).unsqueeze(0).to(device)
+                pred = model(inp_t).item()
+            responses.append(pred)
+
+        responses = np.array(responses)
+
+        # Checks
+        if np.isnan(responses).any():
+            issues.append(f"Product idx {idx}: NaN in predictions")
+        if np.all(responses == responses[0]):
+            issues.append(f"Product idx {idx}: Identical predictions for all discounts")
+        if np.abs(responses).max() > 1000:
+            issues.append(f"Product idx {idx}: Extreme predictions (max={np.abs(responses).max():.1f})")
+
+        ax = axes[plot_i]
+        ax.plot(DISCOUNT_BINS, responses, marker="o", linewidth=2)
+        ax.set_title(f"Product {idx}", fontsize=9)
+        ax.set_xlabel("Discount %")
+        ax.set_ylabel("Pred. Sales Growth %")
+        ax.grid(True, alpha=0.3)
+
+    plt.suptitle("Counterfactual Sales Response Curves (Sample)", fontsize=11)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, "sample_response_curves.png"), dpi=120)
+    plt.close()
+
+    with open(os.path.join(out_dir, "sanity_check_issues.json"), "w") as f:
+        json.dump({"issues": issues, "n_checked": int(n_products)}, f, indent=4)
+
+    if issues:
+        print(f"\n  âš  Sanity check flagged {len(issues)} issue(s):")
+        for issue in issues:
+            print(f"    {issue}")
+    else:
+        print(f"\n  Counterfactual sanity check PASSED ({n_products} products).")
+
+    return issues
+
+
+# â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def main():
+    print("=" * 55)
+    print("PHASE 5 â€” Sales Predictor Training")
+    print("=" * 55)
+
+    torch.manual_seed(42)
+    np.random.seed(42)
+
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    print(f"Device: {device}")
+
+    # â”€â”€ Load state and dataset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    state = np.load("data/processed/state/state.npy")
+    df = pd.read_parquet("data/processed/products_clean.parquet").reset_index(drop=True)
+    if os.path.exists("data/processed/state/state_row_indices.npy"):
+        row_indices = np.load("data/processed/state/state_row_indices.npy")
+        df = df.iloc[row_indices].reset_index(drop=True)
+    assert len(state) == len(df), f"State / dataset length mismatch: {len(state)} vs {len(df)}"
+
+    X, y = prepare_data(state, df)
+
+    train_mask = df["MonthNum"].isin([1, 2, 3, 4, 5, 6]).values
+    val_mask   = df["MonthNum"].isin([7, 8]).values
+    test_mask  = df["MonthNum"].isin([9, 10]).values
+
+    X_train, y_train = X[train_mask], y[train_mask]
+    X_val,   y_val   = X[val_mask],   y[val_mask]
+    X_test,  y_test  = X[test_mask],  y[test_mask]
+
+    print(f"Train: {len(X_train)} | Val: {len(X_val)} | Test: {len(X_test)}")
+
+    # â”€â”€ DataLoaders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    train_loader = DataLoader(
+        TensorDataset(torch.tensor(X_train), torch.tensor(y_train)),
+        batch_size=256, shuffle=True,
+    )
+    val_loader = DataLoader(
+        TensorDataset(torch.tensor(X_val), torch.tensor(y_val)),
+        batch_size=512, shuffle=False,
+    )
+    test_loader = DataLoader(
+        TensorDataset(torch.tensor(X_test), torch.tensor(y_test)),
+        batch_size=512, shuffle=False,
+    )
+
+    # â”€â”€ Model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    input_dim = X.shape[1]    # 79-D state + 1-D discount = 80
+    model = SalesPredictorMLP(input_dim=input_dim).to(device)
+    print(f"Input dim: {input_dim}  (state {state.shape[1]} + action 1)")
+    print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
+
+    # â”€â”€ Train â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    print("\nTraining...")
+    train_losses, val_losses = train(
+        model, train_loader, val_loader, device,
+        epochs=60, patience=8, lr=1e-3,
+        save_path="models/sales_predictor/best_model.pth",
+    )
+
+    # â”€â”€ Load best â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    model.load_state_dict(torch.load("models/sales_predictor/best_model.pth", map_location=device))
+    model.eval()
+
+    # â”€â”€ Evaluate on test set â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    print("\nEvaluating on test set...")
+    preds, actuals = evaluate(model, test_loader, device)
+
+    mae  = float(mean_absolute_error(actuals, preds))
+    rmse = float(np.sqrt(mean_squared_error(actuals, preds)))
+    r2   = float(r2_score(actuals, preds))
+
+    print(f"  MAE  : {mae:.4f}")
+    print(f"  RMSE : {rmse:.4f}")
+    print(f"  RÂ²   : {r2:.4f}")
+
+    # â”€â”€ Save loss curves â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    os.makedirs("reports", exist_ok=True)
+    plt.figure(figsize=(8, 4))
+    plt.plot(train_losses, label="Train MSE")
+    plt.plot(val_losses,   label="Val MSE")
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE Loss")
+    plt.title("Sales Predictor â€” Training Curves")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig("reports/sales_predictor_training_curves.png", dpi=120)
+    plt.close()
+
+    # â”€â”€ Residual plot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    residuals = actuals - preds
+    plt.figure(figsize=(8, 4))
+    plt.hist(residuals, bins=60, edgecolor="k", alpha=0.75)
+    plt.xlabel("Residual (actual âˆ’ predicted)")
+    plt.ylabel("Count")
+    plt.title("Sales Predictor â€” Residual Distribution")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig("reports/sales_predictor_residuals.png", dpi=120)
+    plt.close()
+
+    # â”€â”€ Per-discount-level performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    df_test_sub = df[test_mask].reset_index(drop=True)
+    per_disc = {}
+    for d in sorted(df_test_sub["Discount"].unique()):
+        mask = (df_test_sub["Discount"] == d).values
+        if mask.sum() == 0:
+            continue
+        per_disc[int(d)] = {
+            "n": int(mask.sum()),
+            "mae": float(mean_absolute_error(actuals[mask], preds[mask])),
+            "rmse": float(np.sqrt(mean_squared_error(actuals[mask], preds[mask]))),
+        }
+
+    # â”€â”€ Save metadata alongside weights â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    config = {
+        "architecture": f"MLP: {input_dim}â†’256â†’BNâ†’128â†’BNâ†’64â†’1 (ItaNet-111 Predictor)",
+        "input_dim": int(input_dim),
+        "state_dim": int(state.shape[1]),
+        "action_dim": 1,
+        "discount_bins": DISCOUNT_BINS,
+        "target": "Estimated Monthly Sales Growth Rate",
+        "activation": "ReLU",
+        "optimizer": "Adam",
+        "lr": 1e-3,
+        "weight_decay": 1e-5,
+        "batch_size": 256,
+        "epochs_run": len(train_losses),
+        "early_stopping_patience": 8,
+        "loss": "MSELoss",
+        "random_seed": 42,
+        "device": str(device),
+        "train_samples": int(len(X_train)),
+        "val_samples": int(len(X_val)),
+        "test_samples": int(len(X_test)),
+    }
+
+    metrics = {
+        "test_MAE": mae,
+        "test_RMSE": rmse,
+        "test_R2": r2,
+        "per_discount_performance": per_disc,
+    }
+
+    with open("models/sales_predictor/config.json", "w") as f:
+        json.dump(config, f, indent=4)
+    with open("models/sales_predictor/metrics.json", "w") as f:
+        json.dump(metrics, f, indent=4)
+    with open("reports/sales_predictor_metrics.json", "w") as f:
+        json.dump({**config, **metrics}, f, indent=4)
+
+    print("\nSaved model weights and metadata to models/sales_predictor/")
+
+    # â”€â”€ FREEZE reminder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    for param in model.parameters():
+        param.requires_grad = False
+    print("Model FROZEN (requires_grad=False). Ready for PPO phase.")
+
+    # â”€â”€ Counterfactual sanity check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    print("\nRunning counterfactual sanity check...")
+    state_test_arr = state[test_mask]
+    counterfactual_sanity_check(model, state_test_arr, df_test_sub, device, n_products=10)
+
+    print("\nPhase 5 complete.")
+    print(f"  Best model: models/sales_predictor/best_model.pth")
+    print(f"  MAE={mae:.4f}  RMSE={rmse:.4f}  RÂ²={r2:.4f}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+FILE: .\scripts\train_ppo.py
+================================================================================
+from __future__ import annotations
+
+import argparse
+import csv
+import random
+import sys
+from pathlib import Path
+
+# ---------------------------------------------------------------------
+# Project-root import fix
+# ---------------------------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import numpy as np
+import pandas as pd
+import torch
+
+from src.environment.ppo_dataset import load_ppo_dataset
+from src.environment.pricing_environment import DynamicPricingEnvironment
+from src.models.ppo_agent import PPOAgent
+from src.models.ppo_trainer import (
+    PPOConfig,
+    PPOTrainer,
+    PPORolloutBuffer,
+)
+
+
+# ---------------------------------------------------------------------
+# 8-action observed-support pricing space
+#
+# The original dataset contains observed discounts from 5% to 40%.
+# Therefore this experiment excludes 0%, which is outside observed
+# training support.
+# ---------------------------------------------------------------------
+DISCOUNT_ACTIONS = np.array(
+    [5, 10, 15, 20, 25, 30, 35, 40],
+    dtype=np.int64,
+)
+
+ACTION_DIM = len(DISCOUNT_ACTIONS)
+
+
+# ---------------------------------------------------------------------
+# Reproducibility
+# ---------------------------------------------------------------------
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+
+# ---------------------------------------------------------------------
+# Arguments
+# ---------------------------------------------------------------------
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Batched PPO training for dynamic pricing "
+                    "using the 8-action observed-support space."
+    )
+
+    parser.add_argument(
+        "--updates",
+        type=int,
+        default=500,
+        help="Number of PPO updates.",
+    )
+
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=64,
+        help="Number of real products per PPO rollout.",
+    )
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed.",
+    )
+
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="models/ppo",
+        help="Directory for PPO artifacts.",
+    )
+
+    return parser.parse_args()
+
+
+# ---------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------
+def main():
+    args = parse_args()
+
+    set_seed(args.seed)
+
+    print("=" * 70)
+    print("BATCHED ECONOMIC PPO TRAINING")
+    print("8-ACTION OBSERVED-SUPPORT EXPERIMENT")
+    print("=" * 70)
+
+    print()
+    print("Action space:")
+    print(
+        "  "
+        + ", ".join(f"{discount}%" for discount in DISCOUNT_ACTIONS)
+    )
+    print(f"Action dimension: {ACTION_DIM}")
+    print()
+
+    # -----------------------------------------------------------------
+    # 1. Load states + aligned economics
+    # -----------------------------------------------------------------
+    dataset = load_ppo_dataset()
+
+    # -----------------------------------------------------------------
+    # 2. Recover chronological training split
+    # -----------------------------------------------------------------
+    products_df = pd.read_parquet(
+        "data/processed/products_clean.parquet"
+    )
+
+    aligned = products_df.iloc[
+        dataset.source_row_indices
+    ].copy()
+
+    train_mask = aligned["MonthNum"].between(1, 6)
+
+    train_positions = np.flatnonzero(
+        train_mask.to_numpy()
+    )
+
+    if len(train_positions) == 0:
+        raise RuntimeError(
+            "No training products found in Jan-Jun split."
+        )
+
+    print(
+        f"Total usable PPO products: "
+        f"{len(dataset.states)}"
+    )
+
+    print(
+        f"Training products: "
+        f"{len(train_positions)}"
+    )
+
+    print(
+        f"Products per PPO update: "
+        f"{args.batch_size}"
+    )
+
+    print(
+        f"Number of PPO updates: "
+        f"{args.updates}"
+    )
+
+    print(
+        f"Total pricing decisions: "
+        f"{args.updates * args.batch_size}"
+    )
+
+    print()
+
+    # -----------------------------------------------------------------
+    # 3. PPO agent
+    # -----------------------------------------------------------------
+    agent = PPOAgent(
+        state_dim=111,
+        action_dim=ACTION_DIM,
+        actor_lr=8e-4,
+        critic_lr=8e-4,
+    )
+
+    config = PPOConfig(
+        gamma=0.9,
+        gae_lambda=0.8,
+        clip_epsilon=0.2,
+        entropy_coefficient=0.01,
+        value_coefficient=0.5,
+        batch_size=args.batch_size,
+        update_epochs=4,
+        max_grad_norm=0.5,
+    )
+
+    trainer = PPOTrainer(
+        agent=agent,
+        config=config,
+    )
+
+    # -----------------------------------------------------------------
+    # 4. Economic environment
+    #
+    # IMPORTANT:
+    # The existing DynamicPricingEnvironment still uses the project's
+    # original 9-action mapping:
+    #
+    #   0 -> 0%
+    #   1 -> 5%
+    #   ...
+    #   8 -> 40%
+    #
+    # Our PPO has 8 actions:
+    #
+    #   0 -> 5%
+    #   1 -> 10%
+    #   ...
+    #   7 -> 40%
+    #
+    # Therefore we translate the PPO action into the corresponding
+    # original environment action index.
+    #
+    # PPO action:
+    #   0,1,2,3,4,5,6,7
+    #
+    # Environment action:
+    #   1,2,3,4,5,6,7,8
+    # -----------------------------------------------------------------
+    environment = DynamicPricingEnvironment()
+
+    # PPO action -> original 9-action environment action
+    environment_action_map = np.arange(
+        1,
+        9,
+        dtype=np.int64,
+    )
+
+    # -----------------------------------------------------------------
+    # 5. Output
+    # -----------------------------------------------------------------
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    history_path = (
+        output_dir
+        / "batched_supported_8action_training_history.csv"
+    )
+
+    checkpoint_path = (
+        output_dir
+        / "ppo_batched_supported_8action_500_updates.pth"
+    )
+
+    history = []
+
+    rng = np.random.default_rng(args.seed)
+
+    # -----------------------------------------------------------------
+    # 6. Batched PPO training
+    # -----------------------------------------------------------------
+    for update_number in range(
+        1,
+        args.updates + 1,
+    ):
+
+        # -------------------------------------------------------------
+        # Sample real training products.
+        #
+        # Sampling with replacement across updates is intentional.
+        # Each update receives independent real products.
+        # -------------------------------------------------------------
+        positions = rng.choice(
+            train_positions,
+            size=args.batch_size,
+            replace=False
+            if args.batch_size <= len(train_positions)
+            else True,
+        )
+
+        buffer = PPORolloutBuffer()
+
+        update_rewards = []
+        update_actions = []
+
+        update_growth = []
+        update_sales = []
+        update_revenue = []
+        update_margin = []
+
+        # -------------------------------------------------------------
+        # Collect one rollout
+        # -------------------------------------------------------------
+        for position in positions:
+
+            position = int(position)
+
+            state = dataset.states[position]
+            product = dataset.products[position]
+
+            environment.reset(
+                state=state,
+                product=product,
+            )
+
+            state_tensor = torch.as_tensor(
+                state,
+                dtype=torch.float32,
+            )
+
+            # ---------------------------------------------------------
+            # Stochastic PPO action during training
+            #
+            # PPO action range:
+            #   0..7
+            #
+            # corresponding discounts:
+            #   5,10,15,20,25,30,35,40
+            # ---------------------------------------------------------
+            ppo_action, log_probability, value = (
+                agent.select_action(state_tensor)
+            )
+
+            ppo_action = int(ppo_action)
+
+            if not 0 <= ppo_action < ACTION_DIM:
+                raise RuntimeError(
+                    f"Invalid PPO action: {ppo_action}. "
+                    f"Expected 0..{ACTION_DIM - 1}."
+                )
+
+            # ---------------------------------------------------------
+            # Translate 8-action PPO index into original environment
+            # action index.
+            #
+            # Example:
+            # PPO action 0 -> environment action 1 -> 5%
+            # PPO action 7 -> environment action 8 -> 40%
+            # ---------------------------------------------------------
+            environment_action = int(
+                environment_action_map[ppo_action]
+            )
+
+            # ---------------------------------------------------------
+            # Economic environment
+            # ---------------------------------------------------------
+            _, reward, terminated, info = (
+                environment.step(environment_action)
+            )
+
+            # ---------------------------------------------------------
+            # IMPORTANT:
+            # Store the PPO action (0..7), NOT the environment action
+            # (1..8), because the PPO actor has 8 outputs.
+            # ---------------------------------------------------------
+            buffer.add(
+                state=state_tensor,
+                action=ppo_action,
+                reward=reward,
+                log_probability=log_probability,
+                value=value,
+                done=terminated,
+            )
+
+            update_rewards.append(
+                float(reward)
+            )
+
+            update_actions.append(
+                ppo_action
+            )
+
+            update_growth.append(
+                float(info["predicted_growth_rate"])
+            )
+
+            update_sales.append(
+                float(info["estimated_sales"])
+            )
+
+            update_revenue.append(
+                float(info["estimated_revenue"])
+            )
+
+            update_margin.append(
+                float(info["estimated_margin"])
+            )
+
+        # -------------------------------------------------------------
+        # Every product is a terminal one-step episode.
+        # Therefore no bootstrap value is required.
+        # -------------------------------------------------------------
+        next_value = 0.0
+
+        # -------------------------------------------------------------
+        # PPO update
+        # -------------------------------------------------------------
+        metrics = trainer.update(
+            buffer,
+            next_value=next_value,
+        )
+
+        # -------------------------------------------------------------
+        # Batch statistics
+        # -------------------------------------------------------------
+        mean_reward = float(
+            np.mean(update_rewards)
+        )
+
+        mean_growth = float(
+            np.mean(update_growth)
+        )
+
+        mean_sales = float(
+            np.mean(update_sales)
+        )
+
+        mean_revenue = float(
+            np.mean(update_revenue)
+        )
+
+        mean_margin = float(
+            np.mean(update_margin)
+        )
+
+        action_counts = np.bincount(
+            update_actions,
+            minlength=ACTION_DIM,
+        )
+
+        # -------------------------------------------------------------
+        # Save update-level history
+        # -------------------------------------------------------------
+        row = {
+            "update": update_number,
+            "samples": args.batch_size,
+            "mean_reward": mean_reward,
+            "mean_predicted_growth": mean_growth,
+            "mean_estimated_sales": mean_sales,
+            "mean_estimated_revenue": mean_revenue,
+            "mean_estimated_margin": mean_margin,
+            "actor_loss": float(
+                metrics.get("actor_loss", 0.0)
+            ),
+            "critic_loss": float(
+                metrics.get("critic_loss", 0.0)
+            ),
+            "entropy": float(
+                metrics.get("entropy", 0.0)
+            ),
+        }
+
+        # Store action counts using actual discount names.
+        for action_index, discount in enumerate(
+            DISCOUNT_ACTIONS
+        ):
+            row[
+                f"action_{int(discount)}"
+            ] = int(
+                action_counts[action_index]
+            )
+
+        history.append(row)
+
+        # -------------------------------------------------------------
+        # Console output
+        # -------------------------------------------------------------
+        action_text = ", ".join(
+            f"{int(DISCOUNT_ACTIONS[i])}%={action_counts[i]}"
+            for i in range(ACTION_DIM)
+            if action_counts[i] > 0
+        )
+
+        print(
+            f"Update {update_number:>3}/{args.updates} | "
+            f"Reward {mean_reward:>10.4f} | "
+            f"Growth {mean_growth:>9.4f} | "
+            f"Entropy {metrics.get('entropy', 0.0):>8.4f} | "
+            f"Actions [{action_text}]"
+        )
+
+    # -----------------------------------------------------------------
+    # 7. Save history
+    # -----------------------------------------------------------------
+    if history:
+        fieldnames = list(
+            history[0].keys()
+        )
+
+        with open(
+            history_path,
+            "w",
+            newline="",
+            encoding="utf-8",
+        ) as file:
+
+            writer = csv.DictWriter(
+                file,
+                fieldnames=fieldnames,
+            )
+
+            writer.writeheader()
+            writer.writerows(history)
+
+    # -----------------------------------------------------------------
+    # 8. Save checkpoint
+    # -----------------------------------------------------------------
+    torch.save(
+        {
+            "actor_state_dict": (
+                agent.actor.state_dict()
+            ),
+            "critic_state_dict": (
+                agent.critic.state_dict()
+            ),
+            "actor_optimizer_state_dict": (
+                agent.actor_optimizer.state_dict()
+            ),
+            "critic_optimizer_state_dict": (
+                agent.critic_optimizer.state_dict()
+            ),
+            "config": vars(config),
+            "updates": args.updates,
+            "batch_size": args.batch_size,
+            "seed": args.seed,
+            "training_samples": len(train_positions),
+            "total_decisions": (
+                args.updates * args.batch_size
+            ),
+            "state_dim": 111,
+            "action_dim": ACTION_DIM,
+            "discount_actions": (
+                DISCOUNT_ACTIONS.tolist()
+            ),
+            "reward": (
+                "paper-style delta margin + delta quantity"
+            ),
+            "economic_environment": True,
+            "chronological_training_split": (
+                "Jan-Jun 2023"
+            ),
+            "experiment": (
+                "8-action observed-support PPO"
+            ),
+            "excluded_action": (
+                "0% - outside observed training support"
+            ),
+        },
+        checkpoint_path,
+    )
+
+    # -----------------------------------------------------------------
+    # 9. Final summary
+    # -----------------------------------------------------------------
+    print()
+    print("=" * 70)
+    print(
+        "8-ACTION OBSERVED-SUPPORT PPO TRAINING COMPLETE"
+    )
+    print("=" * 70)
+
+    print(
+        f"Training products: "
+        f"{len(train_positions)}"
+    )
+
+    print(
+        f"PPO updates: "
+        f"{args.updates}"
+    )
+
+    print(
+        f"Decisions processed: "
+        f"{args.updates * args.batch_size}"
+    )
+
+    print(
+        "Action space: "
+        + ", ".join(
+            f"{int(x)}%"
+            for x in DISCOUNT_ACTIONS
+        )
+    )
+
+    print(
+        f"History: "
+        f"{history_path}"
+    )
+
+    print(
+        f"Checkpoint: "
+        f"{checkpoint_path}"
+    )
+
+
+if __name__ == "__main__":
+    main()
+
+================================================================================
+FILE: .\scripts\evaluate_ppo_reproduction.py
+================================================================================
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import torch
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT)
+)
+
+from src.models.ppo_agent import PPOActor
+from src.environment.ppo_dataset import load_ppo_dataset
+from src.environment.counterfactual_simulator import CounterfactualSimulator
+from src.environment.pricing_economics import calculate_pricing_outcome
+from src.environment.reward import SALES_REWARD, calculate_reward
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CHECKPOINT = ROOT / "models/ppo/ppo_batched_economic_50_updates.pth"
+PRODUCTS = ROOT / "data/processed/products_clean.parquet"
+OUTPUT_DIR = ROOT / "reports/base_paper_reproduction"
+DISCOUNTS = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+
+
+def main():
+    # Preserve every existing artifact.
+    outputs = [
+        OUTPUT_DIR / "ppo_test_predictions.csv",
+        OUTPUT_DIR / "ppo_test_action_distribution.csv",
+        OUTPUT_DIR / "ppo_test_summary.json",
+        OUTPUT_DIR / "all_action_counterfactuals.csv",
+    ]
+    existing = [str(path) for path in outputs if path.exists()]
+    if existing:
+        raise FileExistsError(
+            "Refusing to overwrite existing files:\n" + "\n".join(existing)
+        )
+
+    for path in (CHECKPOINT, PRODUCTS):
+        if not path.exists():
+            raise FileNotFoundError(f"Required file not found: {path}")
+
+    device = torch.device("cpu")
+    checkpoint = torch.load(
+        CHECKPOINT, map_location=device, weights_only=False
+    )
+
+    if checkpoint.get("state_dim") != 111 or checkpoint.get("action_dim") != 9:
+        raise ValueError(
+            "Checkpoint dimensions do not match the expected 111-state, "
+            "9-action configuration."
+        )
+
+    actor = PPOActor(state_dim=111, action_dim=9).to(device)
+    actor.load_state_dict(checkpoint["actor_state_dict"])
+    actor.eval()
+
+    dataset = load_ppo_dataset(
+        state_path=ROOT / "data/processed/state/state.npy",
+        index_path=ROOT / "data/processed/state/state_row_indices.npy",
+        products_path=PRODUCTS,
+    )
+
+    products_df = pd.read_parquet(PRODUCTS)
+    aligned = products_df.iloc[dataset.source_row_indices].reset_index(drop=True)
+
+    if len(dataset.states) != len(aligned):
+        raise RuntimeError("State/product alignment check failed.")
+
+    if "MonthNum" not in aligned.columns:
+        raise ValueError("MonthNum is required for the chronological test split.")
+
+    test_mask = aligned["MonthNum"].isin([9, 10]).to_numpy()
+    states = dataset.states[test_mask]
+    test_products = aligned.loc[test_mask].reset_index(drop=True)
+    contexts = [
+        context for context, keep in zip(dataset.products, test_mask) if keep
+    ]
+
+    if len(states) == 0:
+        raise RuntimeError("No test observations found for MonthNum 9–10.")
+
+    # Deterministic policy: choose the highest-probability action.
+    with torch.no_grad():
+        logits = actor(torch.as_tensor(states, dtype=torch.float32, device=device))
+        probabilities = torch.softmax(logits, dim=-1).cpu().numpy()
+
+    chosen_actions = probabilities.argmax(axis=1)
+    chosen_discounts = [DISCOUNTS[index] for index in chosen_actions]
+
+    simulator = CounterfactualSimulator(
+        checkpoint_dir=str(ROOT / "models/sales_predictor"),
+        device=device,
+    )
+
+    prediction_rows = []
+    counterfactual_rows = []
+
+    for i, (state, context, discount, action, probs) in enumerate(
+        zip(states, contexts, chosen_discounts, chosen_actions, probabilities)
+    ):
+        # Baseline at the product's observed discount and zero growth.
+        baseline = calculate_pricing_outcome(
+            observed_price=context.observed_price,
+            observed_discount=context.observed_discount,
+            last_monthly_sales=context.last_monthly_sales,
+            predicted_growth_rate=0.0,
+            candidate_discount=context.observed_discount,
+            gross_margin_rate=context.gross_margin_rate,
+        )
+
+        action_results = []
+
+        for candidate_discount in DISCOUNTS:
+            growth = simulator.predict(state, candidate_discount)
+            outcome = calculate_pricing_outcome(
+                observed_price=context.observed_price,
+                observed_discount=context.observed_discount,
+                last_monthly_sales=context.last_monthly_sales,
+                predicted_growth_rate=growth,
+                candidate_discount=candidate_discount,
+                gross_margin_rate=context.gross_margin_rate,
+            )
+
+            # Match the project's normalized, paper-style reward convention.
+            delta_quantity = (
+                (outcome.estimated_sales - baseline.estimated_sales)
+                / baseline.estimated_sales
+                if baseline.estimated_sales > 0
+                else np.nan
+            )
+
+            delta_margin = (
+                (outcome.estimated_margin - baseline.estimated_margin)
+                / abs(baseline.estimated_margin)
+                if baseline.estimated_margin is not None
+                and abs(baseline.estimated_margin) > 1e-12
+                else np.nan
+            )
+
+            reward = (
+                calculate_reward(delta_margin, delta_quantity, SALES_REWARD)
+                if np.isfinite(delta_margin) and np.isfinite(delta_quantity)
+                else np.nan
+            )
+
+            row = {
+                "test_position": i,
+                "source_row_index": int(dataset.source_row_indices[np.flatnonzero(test_mask)[i]]),
+                "month_num": int(test_products.iloc[i]["MonthNum"]),
+                "discount_percent": candidate_discount,
+                "predicted_growth_percent": growth,
+                "estimated_sales": outcome.estimated_sales,
+                "estimated_revenue": outcome.estimated_revenue,
+                "estimated_margin_proxy": outcome.estimated_margin,
+                "delta_quantity": delta_quantity,
+                "delta_margin_proxy": delta_margin,
+                "sales_weighted_reward": reward,
+            }
+            counterfactual_rows.append(row)
+            action_results.append(row)
+
+        chosen = action_results[int(action)]
+
+        prediction = {
+            "test_position": i,
+            "source_row_index": int(
+                dataset.source_row_indices[np.flatnonzero(test_mask)[i]]
+            ),
+            "month_num": int(test_products.iloc[i]["MonthNum"]),
+            "observed_discount_percent": context.observed_discount,
+            "recommended_action_index": int(action),
+            "recommended_discount_percent": int(discount),
+            "predicted_growth_percent": chosen["predicted_growth_percent"],
+            "estimated_sales": chosen["estimated_sales"],
+            "estimated_revenue": chosen["estimated_revenue"],
+            "estimated_margin_proxy": chosen["estimated_margin_proxy"],
+            "simulated_reward": chosen["sales_weighted_reward"],
+            "policy_entropy": float(
+                -(probs * np.log(np.clip(probs, 1e-12, 1))).sum()
+            ),
+        }
+        prediction.update(
+            {f"prob_discount_{d}": float(p) for d, p in zip(DISCOUNTS, probs)}
+        )
+        prediction_rows.append(prediction)
+
+    predictions = pd.DataFrame(prediction_rows)
+    counterfactuals = pd.DataFrame(counterfactual_rows)
+
+    distribution = (
+        predictions["recommended_discount_percent"]
+        .value_counts()
+        .reindex(DISCOUNTS, fill_value=0)
+        .rename_axis("discount_percent")
+        .reset_index(name="product_count")
+    )
+    distribution["product_share_percent"] = (
+        distribution["product_count"] / len(predictions) * 100
+    )
+
+    valid_rewards = predictions["simulated_reward"].dropna()
+    summary = {
+        "evaluation": "deterministic held-out PPO policy evaluation",
+        "checkpoint": str(CHECKPOINT.relative_to(ROOT)),
+        "checkpoint_updates": checkpoint.get("updates"),
+        "seed": checkpoint.get("seed"),
+        "state_dimension": 111,
+        "action_dimension": 9,
+        "discount_bins_percent": DISCOUNTS,
+        "test_months": [9, 10],
+        "test_products": int(len(predictions)),
+        "reward_definition": "alpha=0.2, beta=0.8",
+        "mean_simulated_reward": (
+            float(valid_rewards.mean()) if len(valid_rewards) else None
+        ),
+        "median_simulated_reward": (
+            float(valid_rewards.median()) if len(valid_rewards) else None
+        ),
+        "valid_reward_count": int(len(valid_rewards)),
+        "invalid_reward_count": int(predictions["simulated_reward"].isna().sum()),
+        "mean_predicted_growth_percent": float(
+            predictions["predicted_growth_percent"].mean()
+        ),
+        "mean_estimated_sales": float(predictions["estimated_sales"].mean()),
+        "mean_estimated_revenue": float(predictions["estimated_revenue"].mean()),
+        "mean_margin_proxy": float(predictions["estimated_margin_proxy"].mean()),
+        "mean_policy_entropy": float(predictions["policy_entropy"].mean()),
+        "limitations": [
+            "111-D state omits unavailable raw-review sentiment features.",
+            "Margin is a dataset-derived proxy, not verified accounting profit.",
+            "Counterfactual outcomes depend on the frozen sales predictor.",
+            "0% discount is outside the observed training-discount support.",
+            "Offline simulated results do not establish real-world causal impact.",
+        ],
+    }
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    predictions.to_csv(outputs[0], index=False)
+    distribution.to_csv(outputs[1], index=False)
+    outputs[2].write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    counterfactuals.to_csv(outputs[3], index=False)
+
+    print("Evaluation complete.")
+    print("Test products:", len(predictions))
+    print("Mean simulated reward:", summary["mean_simulated_reward"])
+    print("\nRecommended discount distribution:")
+    print(distribution.to_string(index=False))
+    print("\nNew files:")
+    for path in outputs:
+        print(path.relative_to(ROOT))
+
+
+if __name__ == "__main__":
+    main()
+
+

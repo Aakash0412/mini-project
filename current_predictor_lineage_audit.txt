@@ -1,0 +1,394 @@
+﻿
+  scripts\audit_neorl_policy_distribution.py:29:    checkpoint = (
+  scripts\audit_neorl_policy_distribution.py:30:        PROJECT_ROOT
+> scripts\audit_neorl_policy_distribution.py:31:        / "models/transfer/neorl_source_policy/best_model.pth"
+  scripts\audit_neorl_policy_distribution.py:32:    )
+  scripts\audit_neorl_policy_distribution.py:33:
+  scripts\audit_neorl_policy_distribution.py:34:    payload = torch.load(
+  scripts\audit_neorl_source_policy_actions.py:15:def load_models():
+  scripts\audit_neorl_source_policy_actions.py:16:    source=NeoRLSourcePolicy(NeoRLSourcePolicyConfig()).to(DEVICE)
+> scripts\audit_neorl_source_policy_actions.py:17:    p=torch.load(PROJECT_ROOT/"models/transfer/neorl_source_policy/best_model.pth",map_location=DEVICE,weights_only=False)
+  scripts\audit_neorl_source_policy_actions.py:18:    source.load_state_dict(p.get("model_state_dict",p)); source.eval()
+  scripts\audit_neorl_source_policy_actions.py:19:    adapter=TransferAdapter(TransferAdapterConfig()).to(DEVICE)
+  scripts\audit_neorl_source_policy_actions.py:20:    p=torch.load(PROJECT_ROOT/"models/transfer/adapter/best_adapter.pth",map_location=DEVICE,weights_only=False)
+  scripts\audit_transfer_action_mapping.py:47:    / "transfer"
+  scripts\audit_transfer_action_mapping.py:48:    / "neorl_source_policy"
+> scripts\audit_transfer_action_mapping.py:49:    / "best_model.pth"
+  scripts\audit_transfer_action_mapping.py:50:)
+  scripts\audit_transfer_action_mapping.py:51:
+  scripts\audit_transfer_action_mapping.py:52:STATE_PATH = (
+  scripts\build_state_train_only.py:14:FEATURE_DIR = Path("data/processed/features")
+  scripts\build_state_train_only.py:15:CORRECTED_DIR = Path("data/processed/features_train_only")
+> scripts\build_state_train_only.py:16:OUTPUT_DIR = Path("data/processed/state_train_only")
+  scripts\build_state_train_only.py:17:REPORT_DIR = Path("reports")
+  scripts\build_state_train_only.py:18:
+  scripts\build_state_train_only.py:19:TEXT_PATH = FEATURE_DIR / "text_features.npy"
+  scripts\build_state_train_only.py:147:    }
+  scripts\build_state_train_only.py:148:
+> scripts\build_state_train_only.py:149:    report_path = REPORT_DIR / "state_train_only_validation.json"
+  scripts\build_state_train_only.py:150:    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+  scripts\build_state_train_only.py:151:
+  scripts\build_state_train_only.py:152:    print(json.dumps(report, indent=2))
+  scripts\diagnose_sales_predictor.py:43:sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+  scripts\diagnose_sales_predictor.py:44:
+> scripts\diagnose_sales_predictor.py:45:from src.models.sales_predictor import load_frozen_predictor
+  scripts\diagnose_sales_predictor.py:46:
+  scripts\diagnose_sales_predictor.py:47:
+  scripts\diagnose_sales_predictor.py:48:# ============================================================
+  scripts\diagnose_sales_predictor.py:54:DATA_PATH = "data/processed/products_clean.parquet"
+  scripts\diagnose_sales_predictor.py:55:
+> scripts\diagnose_sales_predictor.py:56:CHECKPOINT_DIR = "models/sales_predictor"
+  scripts\diagnose_sales_predictor.py:57:
+  scripts\diagnose_sales_predictor.py:58:DISCOUNTS = [5, 10, 15, 20, 25, 30, 35, 40]
+  scripts\diagnose_sales_predictor.py:59:
+> scripts\diagnose_sales_predictor.py:60:OUTPUT_DIR = "reports/sales_predictor_diagnostics"
+  scripts\diagnose_sales_predictor.py:61:
+  scripts\diagnose_sales_predictor.py:62:os.makedirs(OUTPUT_DIR, exist_ok=True)
+  scripts\diagnose_sales_predictor.py:63:
+  scripts\diagnose_sales_predictor.py:578:output_path = os.path.join(
+  scripts\diagnose_sales_predictor.py:579:    OUTPUT_DIR,
+> scripts\diagnose_sales_predictor.py:580:    "sales_predictor_diagnostic.json",
+  scripts\diagnose_sales_predictor.py:581:)
+  scripts\diagnose_sales_predictor.py:582:
+  scripts\diagnose_sales_predictor.py:583:with open(output_path, "w") as f:
+  scripts\evaluate_policy_distillation.py:41:    checkpoint = (
+  scripts\evaluate_policy_distillation.py:42:        PROJECT_ROOT
+> scripts\evaluate_policy_distillation.py:43:        / "models/transfer/distillation/best_model.pth"
+  scripts\evaluate_policy_distillation.py:44:    )
+  scripts\evaluate_policy_distillation.py:45:
+  scripts\evaluate_policy_distillation.py:46:    payload = torch.load(
+  scripts\evaluate_policy_distillation.py:364:    results["checkpoint"] = str(
+  scripts\evaluate_policy_distillation.py:365:        PROJECT_ROOT
+> scripts\evaluate_policy_distillation.py:366:        / "models/transfer/distillation/best_model.pth"
+  scripts\evaluate_policy_distillation.py:367:    )
+  scripts\evaluate_policy_distillation.py:368:
+  scripts\evaluate_policy_distillation.py:369:    results["interpretation"] = (
+  scripts\evaluate_ppo_economic_robustness.py:127:
+  scripts\evaluate_ppo_economic_robustness.py:128:    simulator = CounterfactualSimulator(
+> scripts\evaluate_ppo_economic_robustness.py:129:        checkpoint_dir=str(ROOT / "models/sales_predictor"),
+  scripts\evaluate_ppo_economic_robustness.py:130:        device=torch.device("cpu"),
+  scripts\evaluate_ppo_economic_robustness.py:131:    )
+  scripts\evaluate_ppo_economic_robustness.py:132:
+  scripts\evaluate_ppo_reproduction.py:95:
+  scripts\evaluate_ppo_reproduction.py:96:    simulator = CounterfactualSimulator(
+> scripts\evaluate_ppo_reproduction.py:97:        checkpoint_dir=str(ROOT / "models/sales_predictor"),
+  scripts\evaluate_ppo_reproduction.py:98:        device=device,
+  scripts\evaluate_ppo_reproduction.py:99:    )
+  scripts\evaluate_ppo_reproduction.py:100:
+  scripts\evaluate_transfer_adapter.py:92:
+  scripts\evaluate_transfer_adapter.py:93:def load_source_policy(device: torch.device) -> NeoRLSourcePolicy:
+> scripts\evaluate_transfer_adapter.py:94:    path = PROJECT_ROOT / "models/transfer/neorl_source_policy/best_model.pth"
+  scripts\evaluate_transfer_adapter.py:95:    policy = NeoRLSourcePolicy(NeoRLSourcePolicyConfig()).to(device)
+  scripts\evaluate_transfer_adapter.py:96:    payload = torch.load(path, map_location=device, weights_only=False)
+  scripts\evaluate_transfer_adapter.py:97:    state_dict = payload["model_state_dict"] if isinstance(payload, dict) and "model_state_dict" in payload else payload
+  scripts\evaluate_uncertainty_aware_pricing.py:19:from src.environment.reward import get_reward_config
+  scripts\evaluate_uncertainty_aware_pricing.py:20:from src.models.ppo_agent import PPOAgent
+> scripts\evaluate_uncertainty_aware_pricing.py:21:from src.models.sales_predictor import load_frozen_predictor
+  scripts\evaluate_uncertainty_aware_pricing.py:22:
+  scripts\evaluate_uncertainty_aware_pricing.py:23:DISCOUNTS = np.array([5, 10, 15, 20, 25, 30, 35, 40], dtype=np.float64)
+  scripts\evaluate_uncertainty_aware_pricing.py:24:STATE_DIM = 111
+  scripts\evaluate_uncertainty_aware_pricing.py:170:    reward_config = get_reward_config(args.reward_config)
+  scripts\evaluate_uncertainty_aware_pricing.py:171:    alpha, beta = float(reward_config.alpha), float(reward_config.beta)
+> scripts\evaluate_uncertainty_aware_pricing.py:172:    predictor = load_frozen_predictor("models/sales_predictor", device=torch.device("cpu"))
+  scripts\evaluate_uncertainty_aware_pricing.py:173:    for parameter in predictor.parameters():
+  scripts\evaluate_uncertainty_aware_pricing.py:174:        parameter.requires_grad_(False)
+  scripts\evaluate_uncertainty_aware_pricing.py:175:    actor = load_actor(args.checkpoint)
+  scripts\run_ablation.py:588:            patience_counter = 0
+  scripts\run_ablation.py:589:
+> scripts\run_ablation.py:590:            torch.save(
+  scripts\run_ablation.py:591:                model.state_dict(),
+  scripts\run_ablation.py:592:                model_path,
+  scripts\run_ablation.py:593:            )
+  scripts\run_ablation.py:812:        model_path = (
+  scripts\run_ablation.py:813:            MODEL_DIR
+> scripts\run_ablation.py:814:            / f"{name}_best_model.pth"
+  scripts\run_ablation.py:815:        )
+  scripts\run_ablation.py:816:
+  scripts\run_ablation.py:817:        model, history, best_epoch, best_val_loss = (
+  scripts\smoke_test_pricing_pipeline.py:29:    / "ppo_transfer_supported_8action_1000_updates.pth"
+  scripts\smoke_test_pricing_pipeline.py:30:)
+> scripts\smoke_test_pricing_pipeline.py:31:PREDICTOR_DIR = ROOT / "models" / "sales_predictor"
+  scripts\smoke_test_pricing_pipeline.py:32:
+  scripts\smoke_test_pricing_pipeline.py:33:
+  scripts\smoke_test_pricing_pipeline.py:34:def check(condition, message):
+  scripts\train_neorl_source_policy.py:294:            best_val_nll = val_metrics["nll"]
+  scripts\train_neorl_source_policy.py:295:
+> scripts\train_neorl_source_policy.py:296:            torch.save(
+  scripts\train_neorl_source_policy.py:297:                {
+  scripts\train_neorl_source_policy.py:298:                    "model_state_dict": policy.state_dict(),
+  scripts\train_neorl_source_policy.py:299:                    "config": vars(config),
+  scripts\train_neorl_source_policy.py:300:                    "best_val_nll": best_val_nll,
+  scripts\train_neorl_source_policy.py:301:                },
+> scripts\train_neorl_source_policy.py:302:                output_dir / "best_model.pth",
+  scripts\train_neorl_source_policy.py:303:            )
+  scripts\train_neorl_source_policy.py:304:
+  scripts\train_neorl_source_policy.py:305:    with open(
+  scripts\train_neorl_source_policy.py:338:    print("=" * 70)
+  scripts\train_neorl_source_policy.py:339:    print(f"Best validation NLL: {best_val_nll:.6f}")
+> scripts\train_neorl_source_policy.py:340:    print(f"Checkpoint: {output_dir / 'best_model.pth'}")
+  scripts\train_neorl_source_policy.py:341:
+  scripts\train_neorl_source_policy.py:342:
+  scripts\train_neorl_source_policy.py:343:if __name__ == "__main__":
+  scripts\train_policy_distillation.py:74:
+  scripts\train_policy_distillation.py:75:def load_source_policy(device):
+> scripts\train_policy_distillation.py:76:    path = PROJECT_ROOT / "models/transfer/neorl_source_policy/best_model.pth"
+  scripts\train_policy_distillation.py:77:    payload = torch.load(path, map_location=device, weights_only=False)
+  scripts\train_policy_distillation.py:78:    policy = NeoRLSourcePolicy(NeoRLSourcePolicyConfig()).to(device)
+  scripts\train_policy_distillation.py:79:    state_dict = payload["model_state_dict"] if isinstance(payload, dict) and "model_state_dict" in payload else payload
+  scripts\train_policy_distillation.py:194:    out_dir = PROJECT_ROOT / "models/transfer/distillation"
+  scripts\train_policy_distillation.py:195:    out_dir.mkdir(parents=True, exist_ok=True)
+> scripts\train_policy_distillation.py:196:    best_path = out_dir / "best_model.pth"
+  scripts\train_policy_distillation.py:197:
+  scripts\train_policy_distillation.py:198:    history = []
+  scripts\train_policy_distillation.py:199:    for epoch in range(1, args.epochs + 1):
+  scripts\train_policy_distillation.py:204:        if vl < best:
+  scripts\train_policy_distillation.py:205:            best = vl
+> scripts\train_policy_distillation.py:206:            torch.save(
+  scripts\train_policy_distillation.py:207:                {
+  scripts\train_policy_distillation.py:208:                    "model_state_dict": model.state_dict(),
+  scripts\train_policy_distillation.py:209:                    "config": vars(cfg),
+  scripts\train_ppo.py:504:    # 8. Save checkpoint
+  scripts\train_ppo.py:505:    # -----------------------------------------------------------------
+> scripts\train_ppo.py:506:    torch.save(
+  scripts\train_ppo.py:507:        {
+  scripts\train_ppo.py:508:            "actor_state_dict": (
+  scripts\train_ppo.py:509:                agent.actor.state_dict()
+  scripts\train_ppo_transfer.py:966:    # 8. Save checkpoint
+  scripts\train_ppo_transfer.py:967:    # -----------------------------------------------------------------
+> scripts\train_ppo_transfer.py:968:    torch.save(
+  scripts\train_ppo_transfer.py:969:        {
+  scripts\train_ppo_transfer.py:970:            "actor_state_dict": (
+  scripts\train_ppo_transfer.py:971:                agent.actor.state_dict()
+  scripts\train_ppo_warmstart.py:46:    / "transfer"
+  scripts\train_ppo_warmstart.py:47:    / "neorl_source_policy"
+> scripts\train_ppo_warmstart.py:48:    / "best_model.pth"
+  scripts\train_ppo_warmstart.py:49:)
+  scripts\train_ppo_warmstart.py:50:
+  scripts\train_ppo_warmstart.py:51:OUTPUT_DIR = (
+  scripts\train_ppo_warmstart.py:244:    )
+  scripts\train_ppo_warmstart.py:245:
+> scripts\train_ppo_warmstart.py:246:    torch.save(
+  scripts\train_ppo_warmstart.py:247:        {
+  scripts\train_ppo_warmstart.py:248:            "model_state_dict": warm_actor.state_dict(),
+  scripts\train_ppo_warmstart.py:249:            "config": {
+  scripts\train_ppo_warmstart.py:378:    # -----------------------------------------------------------------------
+  scripts\train_ppo_warmstart.py:379:
+> scripts\train_ppo_warmstart.py:380:    torch.save(
+  scripts\train_ppo_warmstart.py:381:        {
+  scripts\train_ppo_warmstart.py:382:            "actor_state_dict":
+  scripts\train_ppo_warmstart.py:383:                ppo_agent.actor.state_dict(),
+  scripts\train_sales_predictor.py:84:    patience: int = 8,
+  scripts\train_sales_predictor.py:85:    lr: float = 1e-3,
+> scripts\train_sales_predictor.py:86:    save_path: str = "models/sales_predictor/best_model.pth",
+  scripts\train_sales_predictor.py:87:):
+  scripts\train_sales_predictor.py:88:    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
+  scripts\train_sales_predictor.py:89:    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=4)
+  scripts\train_sales_predictor.py:129:            best_val_loss = val_loss
+  scripts\train_sales_predictor.py:130:            patience_counter = 0
+> scripts\train_sales_predictor.py:131:            torch.save(model.state_dict(), save_path)
+  scripts\train_sales_predictor.py:132:        else:
+  scripts\train_sales_predictor.py:133:            patience_counter += 1
+  scripts\train_sales_predictor.py:134:            if patience_counter >= patience:
+  scripts\train_sales_predictor.py:272:        model, train_loader, val_loader, device,
+  scripts\train_sales_predictor.py:273:        epochs=60, patience=8, lr=1e-3,
+> scripts\train_sales_predictor.py:274:        save_path="models/sales_predictor/best_model.pth",
+  scripts\train_sales_predictor.py:275:    )
+  scripts\train_sales_predictor.py:276:
+  scripts\train_sales_predictor.py:277:    # ── Load best ─────────────────────────────────────────────
+> scripts\train_sales_predictor.py:278:    model.load_state_dict(torch.load("models/sales_predictor/best_model.pth", map_location=device))
+  scripts\train_sales_predictor.py:279:    model.eval()
+  scripts\train_sales_predictor.py:280:
+  scripts\train_sales_predictor.py:281:    # ── Evaluate on test set ──────────────────────────────────
+  scripts\train_sales_predictor.py:302:    plt.grid(True, alpha=0.3)
+  scripts\train_sales_predictor.py:303:    plt.tight_layout()
+> scripts\train_sales_predictor.py:304:    plt.savefig("reports/sales_predictor_training_curves.png", dpi=120)
+  scripts\train_sales_predictor.py:305:    plt.close()
+  scripts\train_sales_predictor.py:306:
+  scripts\train_sales_predictor.py:307:    # ── Residual plot ─────────────────────────────────────────
+  scripts\train_sales_predictor.py:314:    plt.grid(True, alpha=0.3)
+  scripts\train_sales_predictor.py:315:    plt.tight_layout()
+> scripts\train_sales_predictor.py:316:    plt.savefig("reports/sales_predictor_residuals.png", dpi=120)
+  scripts\train_sales_predictor.py:317:    plt.close()
+  scripts\train_sales_predictor.py:318:
+  scripts\train_sales_predictor.py:319:    # ── Per-discount-level performance ───────────────────────
+  scripts\train_sales_predictor.py:360:    }
+  scripts\train_sales_predictor.py:361:
+> scripts\train_sales_predictor.py:362:    with open("models/sales_predictor/config.json", "w") as f:
+  scripts\train_sales_predictor.py:363:        json.dump(config, f, indent=4)
+> scripts\train_sales_predictor.py:364:    with open("models/sales_predictor/metrics.json", "w") as f:
+  scripts\train_sales_predictor.py:365:        json.dump(metrics, f, indent=4)
+> scripts\train_sales_predictor.py:366:    with open("reports/sales_predictor_metrics.json", "w") as f:
+  scripts\train_sales_predictor.py:367:        json.dump({**config, **metrics}, f, indent=4)
+  scripts\train_sales_predictor.py:368:
+> scripts\train_sales_predictor.py:369:    print("\nSaved model weights and metadata to models/sales_predictor/")
+  scripts\train_sales_predictor.py:370:
+  scripts\train_sales_predictor.py:371:    # ── FREEZE reminder ───────────────────────────────────────
+  scripts\train_sales_predictor.py:372:    for param in model.parameters():
+  scripts\train_sales_predictor.py:380:
+  scripts\train_sales_predictor.py:381:    print("\nPhase 5 complete.")
+> scripts\train_sales_predictor.py:382:    print(f"  Best model: models/sales_predictor/best_model.pth")
+  scripts\train_sales_predictor.py:383:    print(f"  MAE={mae:.4f}  RMSE={rmse:.4f}  R²={r2:.4f}")
+  scripts\train_sales_predictor.py:384:
+  scripts\train_sales_predictor.py:385:
+  scripts\train_sales_predictor_robust.py:3:
+  scripts\train_sales_predictor_robust.py:4:IMPORTANT:
+> scripts\train_sales_predictor_robust.py:5:- Does NOT replace models/sales_predictor/
+  scripts\train_sales_predictor_robust.py:6:- Current raw-target predictor remains the project baseline.
+  scripts\train_sales_predictor_robust.py:7:- This experiment changes only the target representation:
+  scripts\train_sales_predictor_robust.py:8:
+  scripts\train_sales_predictor_robust.py:31:
+  scripts\train_sales_predictor_robust.py:32:SEED = 42
+> scripts\train_sales_predictor_robust.py:33:OUT_DIR = "models/sales_predictor_robust"
+  scripts\train_sales_predictor_robust.py:34:
+  scripts\train_sales_predictor_robust.py:35:DISCOUNT_BINS = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+  scripts\train_sales_predictor_robust.py:36:
+  scripts\train_sales_predictor_robust.py:369:    best_model_path = os.path.join(
+  scripts\train_sales_predictor_robust.py:370:        OUT_DIR,
+> scripts\train_sales_predictor_robust.py:371:        "best_model.pth"
+  scripts\train_sales_predictor_robust.py:372:    )
+  scripts\train_sales_predictor_robust.py:373:
+  scripts\train_sales_predictor_robust.py:374:    best_val_loss = float("inf")
+  scripts\train_sales_predictor_robust.py:477:            patience_counter = 0
+  scripts\train_sales_predictor_robust.py:478:
+> scripts\train_sales_predictor_robust.py:479:            torch.save(
+  scripts\train_sales_predictor_robust.py:480:                model.state_dict(),
+  scripts\train_sales_predictor_robust.py:481:                best_model_path
+  scripts\train_sales_predictor_robust.py:482:            )
+  scripts\train_sales_predictor_robust.py:759:
+  scripts\train_sales_predictor_robust.py:760:    print(
+> scripts\train_sales_predictor_robust.py:761:        f"  {OUT_DIR}/best_model.pth"
+  scripts\train_sales_predictor_robust.py:762:    )
+  scripts\train_sales_predictor_robust.py:763:
+  scripts\train_sales_predictor_robust.py:764:    print(
+  scripts\train_sales_predictor_robust.py:772:    print(
+  scripts\train_sales_predictor_robust.py:773:        "\nBASELINE PRESERVED:"
+> scripts\train_sales_predictor_robust.py:774:        "\n  models/sales_predictor/"
+  scripts\train_sales_predictor_robust.py:775:    )
+  scripts\train_sales_predictor_robust.py:776:
+  scripts\train_sales_predictor_robust.py:777:
+  scripts\train_sales_predictor_train_only.py:14:
+  scripts\train_sales_predictor_train_only.py:15:ROOT = Path(__file__).resolve().parents[1]
+> scripts\train_sales_predictor_train_only.py:16:STATE_DIR = ROOT / "data" / "processed" / "state_train_only"
+  scripts\train_sales_predictor_train_only.py:17:DATA_PATH = ROOT / "data" / "processed" / "products_clean.parquet"
+  scripts\train_sales_predictor_train_only.py:18:
+> scripts\train_sales_predictor_train_only.py:19:OUTPUT_DIR = ROOT / "models" / "sales_predictor_train_only"
+> scripts\train_sales_predictor_train_only.py:20:REPORT_DIR = ROOT / "reports" / "sales_predictor_train_only"
+  scripts\train_sales_predictor_train_only.py:21:
+  scripts\train_sales_predictor_train_only.py:22:TARGET = "Estimated Monthly Sales Growth Rate"
+  scripts\train_sales_predictor_train_only.py:23:DISCOUNT = "Discount"
+  scripts\train_sales_predictor_train_only.py:241:
+  scripts\train_sales_predictor_train_only.py:242:            OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+> scripts\train_sales_predictor_train_only.py:243:            torch.save(
+  scripts\train_sales_predictor_train_only.py:244:                {
+  scripts\train_sales_predictor_train_only.py:245:                    "model_state_dict": model.state_dict(),
+  scripts\train_sales_predictor_train_only.py:246:                    "input_dim": x.shape[1],
+  scripts\train_sales_predictor_train_only.py:250:                    "best_validation_mse": best_val_loss,
+  scripts\train_sales_predictor_train_only.py:251:                },
+> scripts\train_sales_predictor_train_only.py:252:                OUTPUT_DIR / "best_model.pth",
+  scripts\train_sales_predictor_train_only.py:253:            )
+  scripts\train_sales_predictor_train_only.py:254:        else:
+  scripts\train_sales_predictor_train_only.py:255:            patience_counter += 1
+  scripts\train_sales_predictor_train_only.py:261:    # Restore best validation checkpoint before final test evaluation.
+  scripts\train_sales_predictor_train_only.py:262:    checkpoint = torch.load(
+> scripts\train_sales_predictor_train_only.py:263:        OUTPUT_DIR / "best_model.pth",
+  scripts\train_sales_predictor_train_only.py:264:        map_location=device,
+  scripts\train_sales_predictor_train_only.py:265:        weights_only=True,
+  scripts\train_sales_predictor_train_only.py:266:    )
+  scripts\train_sales_predictor_train_only.py:282:
+  scripts\train_sales_predictor_train_only.py:283:    results = {
+> scripts\train_sales_predictor_train_only.py:284:        "experiment": "sales_predictor_train_only",
+  scripts\train_sales_predictor_train_only.py:285:        "target": TARGET,
+  scripts\train_sales_predictor_train_only.py:286:        "state_dim": int(state.shape[1]),
+  scripts\train_sales_predictor_train_only.py:287:        "input_dim": int(x.shape[1]),
+  scripts\train_sales_predictor_train_only.py:327:    print(json.dumps(results["metrics"], indent=2))
+  scripts\train_sales_predictor_train_only.py:328:    print(f"\nBest epoch: {best_epoch}")
+> scripts\train_sales_predictor_train_only.py:329:    print(f"Checkpoint: {OUTPUT_DIR / 'best_model.pth'}")
+  scripts\train_sales_predictor_train_only.py:330:    print(f"Metrics: {REPORT_DIR / 'metrics.json'}")
+  scripts\train_sales_predictor_train_only.py:331:    print(f"History: {REPORT_DIR / 'training_history.csv'}")
+  scripts\train_sales_predictor_train_only.py:332:
+  scripts\train_soft_policy_distillation.py:39:    path = (
+  scripts\train_soft_policy_distillation.py:40:        PROJECT_ROOT
+> scripts\train_soft_policy_distillation.py:41:        / "models/transfer/neorl_source_policy/best_model.pth"
+  scripts\train_soft_policy_distillation.py:42:    )
+  scripts\train_soft_policy_distillation.py:43:    payload = torch.load(path, map_location=DEVICE, weights_only=False)
+  scripts\train_soft_policy_distillation.py:44:    state = payload.get("model_state_dict", payload)
+  scripts\train_soft_policy_distillation.py:364:            best_epoch = epoch
+  scripts\train_soft_policy_distillation.py:365:
+> scripts\train_soft_policy_distillation.py:366:            torch.save(
+  scripts\train_soft_policy_distillation.py:367:                {
+  scripts\train_soft_policy_distillation.py:368:                    "model_state_dict": model.state_dict(),
+  scripts\train_soft_policy_distillation.py:369:                    "config": config.__dict__,
+  scripts\train_soft_policy_distillation.py:371:                    "epoch": epoch,
+  scripts\train_soft_policy_distillation.py:372:                },
+> scripts\train_soft_policy_distillation.py:373:                output_dir / "best_model.pth",
+  scripts\train_soft_policy_distillation.py:374:            )
+  scripts\train_soft_policy_distillation.py:375:
+  scripts\train_soft_policy_distillation.py:376:    report = {
+  scripts\train_soft_policy_distillation.py:409:    print(
+  scripts\train_soft_policy_distillation.py:410:        f"Checkpoint: "
+> scripts\train_soft_policy_distillation.py:411:        f"{output_dir / 'best_model.pth'}"
+  scripts\train_soft_policy_distillation.py:412:    )
+  scripts\train_soft_policy_distillation.py:413:    print(
+  scripts\train_soft_policy_distillation.py:414:        f"Report: {report_path}"
+  scripts\train_soft_policy_distillation_v2.py:40:    path = (
+  scripts\train_soft_policy_distillation_v2.py:41:        PROJECT_ROOT
+> scripts\train_soft_policy_distillation_v2.py:42:        / "models/transfer/neorl_source_policy/best_model.pth"
+  scripts\train_soft_policy_distillation_v2.py:43:    )
+  scripts\train_soft_policy_distillation_v2.py:44:    payload = torch.load(
+  scripts\train_soft_policy_distillation_v2.py:45:        path,
+  scripts\train_soft_policy_distillation_v2.py:452:            best_epoch = epoch
+  scripts\train_soft_policy_distillation_v2.py:453:
+> scripts\train_soft_policy_distillation_v2.py:454:            torch.save(
+  scripts\train_soft_policy_distillation_v2.py:455:                {
+  scripts\train_soft_policy_distillation_v2.py:456:                    "model_state_dict": model.state_dict(),
+  scripts\train_soft_policy_distillation_v2.py:457:                    "config": config.__dict__,
+  scripts\train_soft_policy_distillation_v2.py:464:                    "soft_target_bandwidth": bandwidth,
+  scripts\train_soft_policy_distillation_v2.py:465:                },
+> scripts\train_soft_policy_distillation_v2.py:466:                output_dir / "best_model.pth",
+  scripts\train_soft_policy_distillation_v2.py:467:            )
+  scripts\train_soft_policy_distillation_v2.py:468:
+  scripts\train_soft_policy_distillation_v2.py:469:    report = {
+  scripts\train_soft_policy_distillation_v2.py:520:    print(
+  scripts\train_soft_policy_distillation_v2.py:521:        f"Checkpoint: "
+> scripts\train_soft_policy_distillation_v2.py:522:        f"{output_dir / 'best_model.pth'}"
+  scripts\train_soft_policy_distillation_v2.py:523:    )
+  scripts\train_soft_policy_distillation_v2.py:524:    print(
+  scripts\train_soft_policy_distillation_v2.py:525:        f"Report: {report_path}"
+  scripts\train_transfer_adapter.py:186:    parser.add_argument("--weight-decay", type=float, default=1e-5)
+  scripts\train_transfer_adapter.py:187:    parser.add_argument("--source-policy", type=str,
+> scripts\train_transfer_adapter.py:188:                        default="models/transfer/neorl_source_policy/best_model.pth")
+  scripts\train_transfer_adapter.py:189:    parser.add_argument("--output-dir", type=str,
+  scripts\train_transfer_adapter.py:190:                        default="models/transfer/adapter")
+  scripts\train_transfer_adapter.py:191:    parser.add_argument("--behavior-weight", type=float, default=1.0)
+  scripts\train_transfer_adapter.py:336:        if row["val_loss"] < best_val:
+  scripts\train_transfer_adapter.py:337:            best_val = row["val_loss"]
+> scripts\train_transfer_adapter.py:338:            torch.save(
+  scripts\train_transfer_adapter.py:339:                {
+  scripts\train_transfer_adapter.py:340:                    "model_state_dict": adapter.state_dict(),
+  scripts\train_transfer_adapter.py:341:                    "config": {
+  scripts\validate_end_to_end.py:17:
+  scripts\validate_end_to_end.py:18:REQUIRED_FILES = [
+> scripts\validate_end_to_end.py:19:    "models/sales_predictor/config.json",
+  scripts\validate_end_to_end.py:20:    "models/ppo_transfer/ppo_transfer_supported_8action_1000_updates.pth",
+  scripts\validate_end_to_end.py:21:    "models/ppo_transfer/transfer_supported_8action_policy_evaluation.csv",
+  scripts\validate_end_to_end.py:22:    "reports/ablation/ablation_results.csv",
+  scripts\validate_end_to_end.py:173:    # 4. Check predictor configuration.
+  scripts\validate_end_to_end.py:174:    print("\n--- 4. Predictor configuration ---")
+> scripts\validate_end_to_end.py:175:    config_path = ROOT / "models/sales_predictor/config.json"
+  scripts\validate_end_to_end.py:176:
+  scripts\validate_end_to_end.py:177:    if config_path.is_file():
+  scripts\validate_end_to_end.py:178:        try:
+  scripts\validate_end_to_end.py:194:
+  scripts\validate_end_to_end.py:195:    # Locate a predictor checkpoint without assuming its filename.
+> scripts\validate_end_to_end.py:196:    predictor_dir = ROOT / "models/sales_predictor"
+  scripts\validate_end_to_end.py:197:    predictor_checkpoints = []
+  scripts\validate_end_to_end.py:198:
+  scripts\validate_end_to_end.py:199:    if predictor_dir.is_dir():
+  scripts\algorithm_comparison\train_ddqn.py:178:            state = next_state
+  scripts\algorithm_comparison\train_ddqn.py:179:
+> scripts\algorithm_comparison\train_ddqn.py:180:    torch.save(
+  scripts\algorithm_comparison\train_ddqn.py:181:        {
+  scripts\algorithm_comparison\train_ddqn.py:182:            "algorithm": "DDQN",
+  scripts\algorithm_comparison\train_ddqn.py:183:            "seed": SEED,
+
+

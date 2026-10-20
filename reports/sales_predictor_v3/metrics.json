@@ -1,0 +1,99 @@
+{
+  "experiment": "sales_predictor_v3_last_sales_input",
+  "target": "Estimated Monthly Sales Growth Rate",
+  "state_dim": 111,
+  "input_dim": 113,
+  "input_contract": "state_111 || last_monthly_sales_1 || discount_1",
+  "seed": 42,
+  "best_epoch": 63,
+  "best_validation_mse": 26077.50598894349,
+  "split_months": {
+    "train": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "validation": [
+      7,
+      8
+    ],
+    "test": [
+      9,
+      10
+    ]
+  },
+  "row_counts": {
+    "train": 20179,
+    "validation": 6512,
+    "test": 7337
+  },
+  "metrics": {
+    "train": {
+      "n": 20179,
+      "mae": 96.45699688793438,
+      "rmse": 2623.1002130160923,
+      "r2": 0.0043863397388947956
+    },
+    "validation": {
+      "n": 6512,
+      "mae": 52.35873383112997,
+      "rmse": 161.48531489000797,
+      "r2": 0.11915765719071669
+    },
+    "test": {
+      "n": 7337,
+      "mae": 109.85052431920533,
+      "rmse": 1223.2269076485015,
+      "r2": 0.01641926002447902
+    }
+  },
+  "target_distribution": {
+    "train": {
+      "mean": 68.36930847167969,
+      "std": 2628.8720703125,
+      "min": -100.0,
+      "max": 245100.0
+    },
+    "validation": {
+      "mean": 29.55851173400879,
+      "std": 172.06158447265625,
+      "min": -99.76000213623047,
+      "max": 5428.56982421875
+    },
+    "test": {
+      "mean": 94.5090103149414,
+      "std": 1233.3946533203125,
+      "min": -99.41999816894531,
+      "max": 67000.0
+    }
+  },
+  "prediction_distribution": {
+    "train": {
+      "mean": 24.980067698711345,
+      "std": 49.86726982619306,
+      "min": -246.1155548095703,
+      "max": 1634.9556884765625
+    },
+    "validation": {
+      "mean": 23.374928725151694,
+      "std": 43.22200459574506,
+      "min": -134.31427001953125,
+      "max": 989.5892944335938
+    },
+    "test": {
+      "mean": 23.282582515131956,
+      "std": 45.93340571999072,
+      "min": -135.4884796142578,
+      "max": 856.6892700195312
+    }
+  },
+  "comparison_to_baseline": {
+    "baseline_test_r2": 0.02497,
+    "baseline_prediction_std": 61.07,
+    "baseline_source": "reports/sales_predictor_train_only/metrics.json",
+    "caveat": "Input now includes last_monthly_sales (paper Eq. 2 d_{t,i}); 0% discount is still out of observed training support (5-40%)."
+  }
+}

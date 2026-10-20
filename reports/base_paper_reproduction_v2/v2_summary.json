@@ -1,0 +1,69 @@
+{
+  "evaluation_type": "one-step counterfactual, paper-aligned metrics",
+  "checkpoint": "models\\ppo\\ppo_batched_economic_50_updates.pth",
+  "state_dimension": 111,
+  "paper_state_dimension": 121,
+  "action_bins_percent": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40
+  ],
+  "test_months": [
+    9,
+    10
+  ],
+  "test_products": 7139,
+  "profit_definition": "gross_profit_proxy: M = R^r*(1-d)*GMR*Q, with C=1-GMR, S=0, V=0, Q^r=0 (paper Eq. 8 partially reduced; not exact accounting profit)",
+  "reward_settings": {
+    "sales": [
+      0.2,
+      0.8
+    ],
+    "balanced": [
+      0.5,
+      0.5
+    ],
+    "profit": [
+      0.8,
+      0.2
+    ]
+  },
+  "models_evaluated": [
+    "PPO",
+    "OPS",
+    "COP",
+    "TBP",
+    "RWD",
+    "DOP",
+    "NEBP"
+  ],
+  "models_not_implemented_in_v2": [
+    "UCB",
+    "TS",
+    "DQNF",
+    "DecisionTransformer",
+    "TransformerDQN"
+  ],
+  "comparable_to_paper": {
+    "mean_delta_margin": "partial (Eq.9; Eq.8 reduced S=V=0,Q^r=0)",
+    "mean_delta_quantity": "yes in definition (Eq.13); simulator-dependent",
+    "paper_reward": "partial (Eq.14 shape; one-step only)",
+    "top1_top3": "partial (heuristic baselines only)",
+    "robustness_retention": "yes in protocol (eps ~ N(0,(frac*Std(g))^2))",
+    "cumulative_return_G": "no (sequential env not implemented)"
+  },
+  "limitations": [
+    "111-D state omits paper 10-D sentiment.",
+    "Title uses MiniLM-32D, not ada-002.",
+    "Profit uses Eq.8 reduced with S=V=0,Q^r=0,C=1-GMR.",
+    "One-step; not cumulative return G.",
+    "Top-1/Top-3 over heuristics only.",
+    "Not the paper's 11-baseline population."
+  ]
+}

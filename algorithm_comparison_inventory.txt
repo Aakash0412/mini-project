@@ -1,0 +1,35 @@
+FILE: reports\algorithm_comparison\algorithm_comparison_details.csv
+ROWS: 28556
+COLUMNS: ['algorithm', 'split', 'source_row', 'discount', 'reward', 'oracle_reward', 'oracle_gap', 'oracle_action_match']
+
+FILE: reports\algorithm_comparison\algorithm_comparison_summary.csv
+ROWS: 4
+COLUMNS: ['algorithm', 'evaluated_products', 'mean_reward', 'median_reward', 'mean_oracle_reward', 'mean_oracle_gap', 'oracle_action_match_pct', 'mean_discount_pct', 'reward_ratio_to_oracle_mean_pct', 'source']
+
+FILE: reports\algorithm_comparison\ddpg_test_evaluation.csv
+ROWS: 7139
+COLUMNS: ['split', 'source_row', 'continuous_action', 'proposed_discount', 'ddpg_discount', 'ddpg_reward', 'ddpg_sales', 'ddpg_revenue', 'ddpg_margin', 'baseline_sales', 'baseline_margin', 'oracle_discount', 'oracle_reward', 'oracle_gap', 'oracle_action_match']
+
+FILE: reports\algorithm_comparison\ddqn_test_evaluation.csv
+ROWS: 7139
+COLUMNS: ['split', 'source_row', 'ddqn_discount', 'ddqn_reward', 'ddqn_sales', 'ddqn_revenue', 'ddqn_margin', 'baseline_sales', 'baseline_margin', 'oracle_discount', 'oracle_reward', 'oracle_gap', 'oracle_action_match']
+
+FILE: reports\algorithm_comparison\paper_aligned_metrics\growth_summary.csv
+ROWS: 12
+COLUMNS: ['algorithm', 'metric', 'n', 'mean', 'median', 'std', 'q25', 'q75', 'min', 'max']
+
+FILE: reports\algorithm_comparison\paper_aligned_metrics\paired_comparisons.csv
+ROWS: 18
+COLUMNS: ['metric', 'algorithm_a', 'algorithm_b', 'difference_definition', 'paired_n', 'mean_difference', 'median_difference', 'bootstrap_95ci_low', 'bootstrap_95ci_high', 'wilcoxon_p_value', 'bootstrap_resamples', 'random_seed']
+
+FILE: reports\algorithm_comparison\paper_aligned_metrics\per_product_growth.csv
+ROWS: 28556
+COLUMNS: ['algorithm', 'source_row', 'discount_pct', 'reward', 'baseline_sales', 'estimated_sales', 'sales_growth_pct', 'baseline_margin_proxy', 'estimated_margin_proxy', 'margin_proxy_growth_pct']
+
+FILE: reports\algorithm_comparison\paper_aligned_metrics\topk_rankings.csv
+ROWS: 8
+COLUMNS: ['metric', 'algorithm', 'products_ranked', 'top1_count', 'top1_pct', 'top3_count', 'top3_pct', 'ranking_scope']
+
+FILE: reports\algorithm_comparison\sac_test_evaluation.csv
+ROWS: 7139
+COLUMNS: ['split', 'source_row', 'continuous_action', 'proposed_discount', 'sac_discount', 'sac_reward', 'sac_sales', 'sac_revenue', 'sac_margin', 'baseline_sales', 'baseline_margin', 'oracle_discount', 'oracle_reward', 'oracle_gap', 'oracle_action_match']

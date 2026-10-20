@@ -61,3 +61,40 @@ reports/*
 
 # Mac
 .DS_Store
+
+# Un-ignore v2 and later evidence (graded project requires reproducibility)
+!reports/base_paper_reproduction_v2/**
+!reports/base_paper_reproduction_v2/*
+!reports/uncertainty_aware_pricing/**
+!reports/uncertainty_aware_pricing/*
+!reports/negative_findings/**
+!reports/negative_findings/*
+!reports/sales_predictor_v3/**
+!reports/sales_predictor_v3/*
+!reports/sales_predictor_clip/**
+!reports/sales_predictor_clip/*
+!reports/sales_predictor_log_winsor/**
+!reports/sales_predictor_log_winsor/*
+!reports/sales_predictor_train_only/**
+!reports/sales_predictor_train_only/*
+!models/sales_predictor_v3/**
+!models/sales_predictor_v3/*
+!models/sales_predictor_v3/best_model.pth
+
+# ---- v2 evidence: re-include directory FIRST, then contents ----
+!reports/base_paper_reproduction_v2/
+!reports/base_paper_reproduction_v2/**
+!reports/uncertainty_aware_pricing/
+!reports/uncertainty_aware_pricing/**
+!reports/negative_findings/
+!reports/negative_findings/**
+!reports/sales_predictor_v3/
+!reports/sales_predictor_v3/**
+!reports/sales_predictor_clip/
+!reports/sales_predictor_clip/**
+!reports/sales_predictor_log_winsor/
+!reports/sales_predictor_log_winsor/**
+!reports/sales_predictor_train_only/
+!reports/sales_predictor_train_only/**
+!models/sales_predictor_v3/
+!models/sales_predictor_v3/**

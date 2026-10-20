@@ -1,0 +1,66 @@
+
+================================================================================
+FILE: reports\algorithm_comparison\paper_aligned_metrics\topk_rankings.csv
+================================================================================
+                 metric algorithm  products_ranked  top1_count  top1_pct  top3_count  top3_pct                                    ranking_scope
+       sales_growth_pct       PPO             7139        2443 34.220479        6134 85.922398 PPO, DDPG, SAC, DDQN only; ties use minimum rank
+       sales_growth_pct      DDPG             7139        2741 38.394733        5083 71.200448 PPO, DDPG, SAC, DDQN only; ties use minimum rank
+       sales_growth_pct       SAC             7139        2920 40.902087        6722 94.158846 PPO, DDPG, SAC, DDQN only; ties use minimum rank
+       sales_growth_pct      DDQN             7139        2654 37.176075        5598 78.414344 PPO, DDPG, SAC, DDQN only; ties use minimum rank
+margin_proxy_growth_pct       PPO             7136        1833 25.686659        6226 87.247758 PPO, DDPG, SAC, DDQN only; ties use minimum rank
+margin_proxy_growth_pct      DDPG             7136        3845 53.881726        5634 78.951794 PPO, DDPG, SAC, DDQN only; ties use minimum rank
+margin_proxy_growth_pct       SAC             7136        1424 19.955157        6149 86.168722 PPO, DDPG, SAC, DDQN only; ties use minimum rank
+margin_proxy_growth_pct      DDQN             7136        2828 39.630045        5741 80.451233 PPO, DDPG, SAC, DDQN only; ties use minimum rank
+
+================================================================================
+FILE: reports\algorithm_comparison\paper_aligned_metrics\growth_summary.csv
+================================================================================
+algorithm                  metric    n      mean    median       std      q25       q75        min         max
+      PPO                  reward 7139  0.384784  0.209864  0.656067 0.058199  0.494084  -0.050872   15.332333
+      PPO        sales_growth_pct 7139 37.712193 20.485630 63.958875 3.651223 49.088833   0.183597 1444.950439
+      PPO margin_proxy_growth_pct 7136 41.571229 25.579437 75.829103 6.317974 53.367619 -26.178930 1886.364851
+     DDPG                  reward 7139  0.388787  0.211342  0.664106 0.069755  0.493746  -0.070432   15.751973
+     DDPG        sales_growth_pct 7139 37.766058 21.457027 64.148781 2.579221 50.067757   0.188916 1463.517456
+     DDPG margin_proxy_growth_pct 7136 43.361996 26.969938 81.391909 8.473404 54.366202 -36.620373 2021.916548
+      SAC                  reward 7139  0.388767  0.219874  0.662763 0.059674  0.505423  -0.060471   15.751973
+      SAC        sales_growth_pct 7139 38.669290 22.543350 64.175874 3.983042 51.221584   0.183703 1463.517456
+      SAC margin_proxy_growth_pct 7136 39.734504 23.412843 79.268930 5.033785 50.423554 -31.382706 2021.916548
+     DDQN                  reward 7139  0.379223  0.198712  0.652673 0.056673  0.483739  -0.070892   15.751973
+     DDQN        sales_growth_pct 7139 37.027644 20.162395 63.691220 3.154945 48.282177   0.183257 1463.517456
+     DDQN margin_proxy_growth_pct 7136 41.531356 25.612767 75.629591 6.363701 53.980081 -36.651734 2021.916548
+
+================================================================================
+FILE: reports\algorithm_comparison\paper_aligned_metrics\paired_comparisons.csv
+================================================================================
+                 metric algorithm_a algorithm_b difference_definition  paired_n  mean_difference  median_difference  bootstrap_95ci_low  bootstrap_95ci_high  wilcoxon_p_value  bootstrap_resamples  random_seed
+                 reward         PPO        DDPG        PPO minus DDPG      7139        -0.004003          -0.004415           -0.005250            -0.002811      1.129520e-25                 5000           42
+                 reward         PPO         SAC         PPO minus SAC      7139        -0.003983           0.000000           -0.004942            -0.003055      2.419748e-20                 5000           42
+                 reward         PPO        DDQN        PPO minus DDQN      7139         0.005561           0.000000            0.004352             0.006808      3.753670e-11                 5000           42
+                 reward        DDPG         SAC        DDPG minus SAC      7139         0.000020           0.000000           -0.001014             0.001034      1.229464e-05                 5000           42
+                 reward        DDPG        DDQN       DDPG minus DDQN      7139         0.009565           0.000000            0.008116             0.011076      2.867044e-48                 5000           42
+                 reward         SAC        DDQN        SAC minus DDQN      7139         0.009544           0.000000            0.008212             0.010908      2.277226e-32                 5000           42
+       sales_growth_pct         PPO        DDPG        PPO minus DDPG      7139        -0.053865           0.000000           -0.198440             0.091837      2.001480e-02                 5000           42
+       sales_growth_pct         PPO         SAC         PPO minus SAC      7139        -0.957097           0.000000           -1.064553            -0.853041      3.985023e-74                 5000           42
+       sales_growth_pct         PPO        DDQN        PPO minus DDQN      7139         0.684549           0.000000            0.545451             0.831533      1.172679e-16                 5000           42
+       sales_growth_pct        DDPG         SAC        DDPG minus SAC      7139        -0.903232           0.000000           -1.023027            -0.785935      6.372976e-48                 5000           42
+       sales_growth_pct        DDPG        DDQN       DDPG minus DDQN      7139         0.738414           0.000000            0.570679             0.922924      1.643684e-04                 5000           42
+       sales_growth_pct         SAC        DDQN        SAC minus DDQN      7139         1.641646           0.000000            1.493880             1.790616      1.126414e-79                 5000           42
+margin_proxy_growth_pct         PPO        DDPG        PPO minus DDPG      7136        -1.790767          -3.221595           -2.181753            -1.407709      1.987762e-13                 5000           42
+margin_proxy_growth_pct         PPO         SAC         PPO minus SAC      7136         1.836724           0.000000            1.563616             2.118845      3.911511e-53                 5000           42
+margin_proxy_growth_pct         PPO        DDQN        PPO minus DDQN      7136         0.039873           0.000000           -0.307916             0.389654      4.365054e-01                 5000           42
+margin_proxy_growth_pct        DDPG         SAC        DDPG minus SAC      7136         3.627492           0.000000            3.300632             3.964220      5.560456e-98                 5000           42
+margin_proxy_growth_pct        DDPG        DDQN       DDPG minus DDQN      7136         1.830640           0.000000            1.354775             2.300714      1.251428e-11                 5000           42
+margin_proxy_growth_pct         SAC        DDQN        SAC minus DDQN      7136        -1.796852           0.000000           -2.208078            -1.388694      2.620908e-36                 5000           42
+
+================================================================================
+CODE THAT GENERATES TOP-K METRICS
+================================================================================
+
+SCRIPT: scripts\algorithm_comparison\evaluate_paper_metrics.py
+34: "topk_rankings.csv",
+120: "top1_count": int(((ranks[algorithm] == 1) & valid).sum()),
+121: "top1_pct": float(100 * ((ranks[algorithm] == 1) & valid).sum() / max(valid.sum(), 1)),
+122: "top3_count": int(((ranks[algorithm] <= 3) & valid).sum()),
+123: "top3_pct": float(100 * ((ranks[algorithm] <= 3) & valid).sum() / max(valid.sum(), 1)),
+202: topk.to_csv(OUT / "topk_rankings.csv", index=False)
+236: "- `topk_rankings.csv`",

@@ -1,0 +1,2084 @@
+========================================================================================== 
+1. SOURCE FILES
+ ==========================================================================================
+
+==================== scripts/evaluate_ppo_reproduction.py ====================
+Lines: 261
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import torch
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT)
+)
+
+from src.models.ppo_agent import PPOActor
+from src.environment.ppo_dataset import load_ppo_dataset
+from src.environment.counterfactual_simulator import CounterfactualSimulator
+from src.environment.pricing_economics import calculate_pricing_outcome
+from src.environment.reward import SALES_REWARD, calculate_reward
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CHECKPOINT = ROOT / "models/ppo/ppo_batched_economic_50_updates.pth"
+PRODUCTS = ROOT / "data/processed/products_clean.parquet"
+OUTPUT_DIR = ROOT / "reports/base_paper_reproduction"
+DISCOUNTS = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+
+
+def main():
+    # Preserve every existing artifact.
+    outputs = [
+        OUTPUT_DIR / "ppo_test_predictions.csv",
+        OUTPUT_DIR / "ppo_test_action_distribution.csv",
+        OUTPUT_DIR / "ppo_test_summary.json",
+        OUTPUT_DIR / "all_action_counterfactuals.csv",
+    ]
+    existing = [str(path) for path in outputs if path.exists()]
+    if existing:
+        raise FileExistsError(
+            "Refusing to overwrite existing files:\n" + "\n".join(existing)
+        )
+
+    for path in (CHECKPOINT, PRODUCTS):
+        if not path.exists():
+            raise FileNotFoundError(f"Required file not found: {path}")
+
+    device = torch.device("cpu")
+    checkpoint = torch.load(
+        CHECKPOINT, map_location=device, weights_only=False
+    )
+
+    if checkpoint.get("state_dim") != 111 or checkpoint.get("action_dim") != 9:
+        raise ValueError(
+            "Checkpoint dimensions do not match the expected 111-state, "
+            "9-action configuration."
+        )
+
+    actor = PPOActor(state_dim=111, action_dim=9).to(device)
+    actor.load_state_dict(checkpoint["actor_state_dict"])
+    actor.eval()
+
+    dataset = load_ppo_dataset(
+        state_path=ROOT / "data/processed/state/state.npy",
+        index_path=ROOT / "data/processed/state/state_row_indices.npy",
+        products_path=PRODUCTS,
+    )
+
+    products_df = pd.read_parquet(PRODUCTS)
+    aligned = products_df.iloc[dataset.source_row_indices].reset_index(drop=True)
+
+    if len(dataset.states) != len(aligned):
+        raise RuntimeError("State/product alignment check failed.")
+
+    if "MonthNum" not in aligned.columns:
+        raise ValueError("MonthNum is required for the chronological test split.")
+
+    test_mask = aligned["MonthNum"].isin([9, 10]).to_numpy()
+    states = dataset.states[test_mask]
+    test_products = aligned.loc[test_mask].reset_index(drop=True)
+    contexts = [
+        context for context, keep in zip(dataset.products, test_mask) if keep
+    ]
+
+    if len(states) == 0:
+        raise RuntimeError("No test observations found for MonthNum 9–10.")
+
+    # Deterministic policy: choose the highest-probability action.
+    with torch.no_grad():
+        logits = actor(torch.as_tensor(states, dtype=torch.float32, device=device))
+        probabilities = torch.softmax(logits, dim=-1).cpu().numpy()
+
+    chosen_actions = probabilities.argmax(axis=1)
+    chosen_discounts = [DISCOUNTS[index] for index in chosen_actions]
+
+    simulator = CounterfactualSimulator(
+        checkpoint_dir=str(ROOT / "models/sales_predictor"),
+        device=device,
+    )
+
+    prediction_rows = []
+    counterfactual_rows = []
+
+    for i, (state, context, discount, action, probs) in enumerate(
+        zip(states, contexts, chosen_discounts, chosen_actions, probabilities)
+    ):
+        # Baseline at the product's observed discount and zero growth.
+        baseline = calculate_pricing_outcome(
+            observed_price=context.observed_price,
+            observed_discount=context.observed_discount,
+            last_monthly_sales=context.last_monthly_sales,
+            predicted_growth_rate=0.0,
+            candidate_discount=context.observed_discount,
+            gross_margin_rate=context.gross_margin_rate,
+        )
+
+        action_results = []
+
+        for candidate_discount in DISCOUNTS:
+            growth = simulator.predict(state, candidate_discount)
+            outcome = calculate_pricing_outcome(
+                observed_price=context.observed_price,
+                observed_discount=context.observed_discount,
+                last_monthly_sales=context.last_monthly_sales,
+                predicted_growth_rate=growth,
+                candidate_discount=candidate_discount,
+                gross_margin_rate=context.gross_margin_rate,
+            )
+
+            # Match the project's normalized, paper-style reward convention.
+            delta_quantity = (
+                (outcome.estimated_sales - baseline.estimated_sales)
+                / baseline.estimated_sales
+                if baseline.estimated_sales > 0
+                else np.nan
+            )
+
+            delta_margin = (
+                (outcome.estimated_margin - baseline.estimated_margin)
+                / abs(baseline.estimated_margin)
+                if baseline.estimated_margin is not None
+                and abs(baseline.estimated_margin) > 1e-12
+                else np.nan
+            )
+
+            reward = (
+                calculate_reward(delta_margin, delta_quantity, SALES_REWARD)
+                if np.isfinite(delta_margin) and np.isfinite(delta_quantity)
+                else np.nan
+            )
+
+            row = {
+                "test_position": i,
+                "source_row_index": int(dataset.source_row_indices[np.flatnonzero(test_mask)[i]]),
+                "month_num": int(test_products.iloc[i]["MonthNum"]),
+                "discount_percent": candidate_discount,
+                "predicted_growth_percent": growth,
+                "estimated_sales": outcome.estimated_sales,
+                "estimated_revenue": outcome.estimated_revenue,
+                "estimated_margin_proxy": outcome.estimated_margin,
+                "delta_quantity": delta_quantity,
+                "delta_margin_proxy": delta_margin,
+                "sales_weighted_reward": reward,
+            }
+            counterfactual_rows.append(row)
+            action_results.append(row)
+
+        chosen = action_results[int(action)]
+
+        prediction = {
+            "test_position": i,
+            "source_row_index": int(
+                dataset.source_row_indices[np.flatnonzero(test_mask)[i]]
+            ),
+            "month_num": int(test_products.iloc[i]["MonthNum"]),
+            "observed_discount_percent": context.observed_discount,
+            "recommended_action_index": int(action),
+            "recommended_discount_percent": int(discount),
+            "predicted_growth_percent": chosen["predicted_growth_percent"],
+            "estimated_sales": chosen["estimated_sales"],
+            "estimated_revenue": chosen["estimated_revenue"],
+            "estimated_margin_proxy": chosen["estimated_margin_proxy"],
+            "simulated_reward": chosen["sales_weighted_reward"],
+            "policy_entropy": float(
+                -(probs * np.log(np.clip(probs, 1e-12, 1))).sum()
+            ),
+        }
+        prediction.update(
+            {f"prob_discount_{d}": float(p) for d, p in zip(DISCOUNTS, probs)}
+        )
+        prediction_rows.append(prediction)
+
+    predictions = pd.DataFrame(prediction_rows)
+    counterfactuals = pd.DataFrame(counterfactual_rows)
+
+    distribution = (
+        predictions["recommended_discount_percent"]
+        .value_counts()
+        .reindex(DISCOUNTS, fill_value=0)
+        .rename_axis("discount_percent")
+        .reset_index(name="product_count")
+    )
+    distribution["product_share_percent"] = (
+        distribution["product_count"] / len(predictions) * 100
+    )
+
+    valid_rewards = predictions["simulated_reward"].dropna()
+    summary = {
+        "evaluation": "deterministic held-out PPO policy evaluation",
+        "checkpoint": str(CHECKPOINT.relative_to(ROOT)),
+        "checkpoint_updates": checkpoint.get("updates"),
+        "seed": checkpoint.get("seed"),
+        "state_dimension": 111,
+        "action_dimension": 9,
+        "discount_bins_percent": DISCOUNTS,
+        "test_months": [9, 10],
+        "test_products": int(len(predictions)),
+        "reward_definition": "alpha=0.2, beta=0.8",
+        "mean_simulated_reward": (
+            float(valid_rewards.mean()) if len(valid_rewards) else None
+        ),
+        "median_simulated_reward": (
+            float(valid_rewards.median()) if len(valid_rewards) else None
+        ),
+        "valid_reward_count": int(len(valid_rewards)),
+        "invalid_reward_count": int(predictions["simulated_reward"].isna().sum()),
+        "mean_predicted_growth_percent": float(
+            predictions["predicted_growth_percent"].mean()
+        ),
+        "mean_estimated_sales": float(predictions["estimated_sales"].mean()),
+        "mean_estimated_revenue": float(predictions["estimated_revenue"].mean()),
+        "mean_margin_proxy": float(predictions["estimated_margin_proxy"].mean()),
+        "mean_policy_entropy": float(predictions["policy_entropy"].mean()),
+        "limitations": [
+            "111-D state omits unavailable raw-review sentiment features.",
+            "Margin is a dataset-derived proxy, not verified accounting profit.",
+            "Counterfactual outcomes depend on the frozen sales predictor.",
+            "0% discount is outside the observed training-discount support.",
+            "Offline simulated results do not establish real-world causal impact.",
+        ],
+    }
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    predictions.to_csv(outputs[0], index=False)
+    distribution.to_csv(outputs[1], index=False)
+    outputs[2].write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    counterfactuals.to_csv(outputs[3], index=False)
+
+    print("Evaluation complete.")
+    print("Test products:", len(predictions))
+    print("Mean simulated reward:", summary["mean_simulated_reward"])
+    print("\nRecommended discount distribution:")
+    print(distribution.to_string(index=False))
+    print("\nNew files:")
+    for path in outputs:
+        print(path.relative_to(ROOT))
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+==================== scripts/evaluate_ppo_transfer.py ====================
+Lines: 1004
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+# ---------------------------------------------------------------------
+# Project root
+# ---------------------------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import numpy as np
+import pandas as pd
+import torch
+
+from src.environment.ppo_dataset import load_ppo_dataset
+from src.environment.pricing_environment import DynamicPricingEnvironment
+from src.environment.reward import get_reward_config
+from src.models.ppo_agent import PPOAgent
+
+
+# ---------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------
+
+# New 8-action observed-support PPO checkpoint.
+CHECKPOINT = Path(
+    "models/ppo_transfer/ppo_transfer_supported_8action_1000_updates.pth"
+)
+
+OUTPUT_PATH = Path(
+    "models/ppo_transfer/transfer_supported_8action_policy_evaluation.csv"
+)
+
+# IMPORTANT:
+# The PPO actor has 8 outputs.
+#
+# PPO action 0 -> 5%
+# PPO action 1 -> 10%
+# PPO action 2 -> 15%
+# PPO action 3 -> 20%
+# PPO action 4 -> 25%
+# PPO action 5 -> 30%
+# PPO action 6 -> 35%
+# PPO action 7 -> 40%
+#
+# The DynamicPricingEnvironment internally uses:
+# 0 -> 0%
+# 1 -> 5%
+# ...
+# 8 -> 40%
+#
+# Therefore we translate PPO actions using:
+# environment_action = ppo_action + 1
+#
+DISCOUNT_BINS = [
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+]
+
+STATE_DIM = 111
+ACTION_DIM = 8
+
+EPSILON = 1e-8
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Evaluate a trained 8-action PPO pricing policy."
+    )
+    parser.add_argument(
+        "--checkpoint", type=Path, default=CHECKPOINT,
+        help="Trained PPO checkpoint path."
+    )
+    parser.add_argument(
+        "--output", type=Path, default=OUTPUT_PATH,
+        help="Output CSV path."
+    )
+    parser.add_argument(
+        "--reward-config", choices=("sales", "balanced", "profit"),
+        default="sales", help="Reward configuration for evaluation."
+    )
+    return parser.parse_args()
+
+
+# ---------------------------------------------------------------------
+# Model loading
+# ---------------------------------------------------------------------
+
+def load_agent(checkpoint_path: Path) -> PPOAgent:
+    """Load the trained 8-action PPO actor and critic."""
+
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(
+            f"Checkpoint not found: {checkpoint_path}"
+        )
+
+    checkpoint = torch.load(
+        checkpoint_path,
+        map_location="cpu",
+        weights_only=False,
+    )
+
+    # Validate checkpoint metadata if available.
+    checkpoint_action_dim = checkpoint.get(
+        "action_dim",
+        None,
+    )
+
+    if checkpoint_action_dim is not None:
+        if int(checkpoint_action_dim) != ACTION_DIM:
+            raise ValueError(
+                "Checkpoint action dimension mismatch. "
+                f"Expected {ACTION_DIM}, "
+                f"found {checkpoint_action_dim}."
+            )
+
+    agent = PPOAgent(
+        state_dim=STATE_DIM,
+        action_dim=ACTION_DIM,
+        actor_lr=8e-4,
+        critic_lr=8e-4,
+    )
+
+    agent.actor.load_state_dict(
+        checkpoint["actor_state_dict"]
+    )
+
+    agent.critic.load_state_dict(
+        checkpoint["critic_state_dict"]
+    )
+
+    agent.actor.eval()
+    agent.critic.eval()
+
+    return agent
+
+
+# ---------------------------------------------------------------------
+# Deterministic action selection
+# ---------------------------------------------------------------------
+
+def select_deterministic_action(
+    agent: PPOAgent,
+    state: np.ndarray,
+) -> int:
+    """
+    Select the highest-probability PPO action.
+
+    Stochastic sampling is intentionally disabled during evaluation.
+    """
+
+    state_tensor = torch.as_tensor(
+        state,
+        dtype=torch.float32,
+    ).unsqueeze(0)
+
+    with torch.no_grad():
+
+        output = agent.actor(
+            state_tensor
+        )
+
+        # Actor may return logits directly or a distribution.
+        if hasattr(output, "logits"):
+            logits = output.logits
+        else:
+            logits = output
+
+        action = torch.argmax(
+            logits,
+            dim=-1,
+        ).item()
+
+    return int(action)
+
+
+# ---------------------------------------------------------------------
+# Relative reward calculation
+# ---------------------------------------------------------------------
+
+def calculate_relative_reward(
+    delta_margin: float,
+    delta_quantity: float,
+    baseline_margin: float,
+    baseline_quantity: float,
+    alpha: float,
+    beta: float,
+) -> float:
+    """
+    Calculate the normalized relative economic reward.
+
+    This matches the current training environment:
+
+        relative_delta_quantity =
+            delta_quantity /
+            max(abs(baseline_quantity), EPSILON)
+
+        relative_delta_margin =
+            delta_margin /
+            max(abs(baseline_margin), EPSILON)
+
+        reward =
+            alpha * relative_delta_margin
+            + beta * relative_delta_quantity
+    """
+
+    relative_delta_quantity = (
+        delta_quantity
+        / max(
+            abs(baseline_quantity),
+            EPSILON,
+        )
+    )
+
+    relative_delta_margin = (
+        delta_margin
+        / max(
+            abs(baseline_margin),
+            EPSILON,
+        )
+    )
+
+    reward = (
+        alpha * relative_delta_margin
+        + beta * relative_delta_quantity
+    )
+
+    return float(reward)
+
+
+# ---------------------------------------------------------------------
+# Main evaluation
+# ---------------------------------------------------------------------
+
+def main():
+    global CHECKPOINT, OUTPUT_PATH
+    args = parse_args()
+    CHECKPOINT = args.checkpoint
+    OUTPUT_PATH = args.output
+
+    print("=" * 70)
+    print("8-ACTION PPO ECONOMIC POLICY VALIDATION")
+    print("=" * 70)
+
+    print()
+    print(f"Checkpoint: {CHECKPOINT}")
+
+    print()
+    print("PPO action space:")
+    print(
+        "  "
+        + ", ".join(
+            f"{discount}%"
+            for discount in DISCOUNT_BINS
+        )
+    )
+
+    print(
+        f"Action dimension: {ACTION_DIM}"
+    )
+
+    # -----------------------------------------------------------------
+    # Load dataset
+    # -----------------------------------------------------------------
+
+    dataset = load_ppo_dataset()
+
+    print(
+        f"Loaded economic PPO samples: "
+        f"{len(dataset.states)}"
+    )
+
+    # -----------------------------------------------------------------
+    # Load dataframe for chronological split information
+    # -----------------------------------------------------------------
+
+    df = pd.read_parquet(
+        "data/processed/products_clean.parquet"
+    )
+
+    source_indices = dataset.source_row_indices
+
+    aligned = df.iloc[
+        source_indices
+    ].copy()
+
+    # -----------------------------------------------------------------
+    # Chronological split
+    # -----------------------------------------------------------------
+
+    train_mask = aligned[
+        "MonthNum"
+    ].between(1, 6)
+
+    val_mask = aligned[
+        "MonthNum"
+    ].between(7, 8)
+
+    test_mask = aligned[
+        "MonthNum"
+    ].between(9, 10)
+
+    split_masks = {
+        "train": train_mask.to_numpy(),
+        "validation": val_mask.to_numpy(),
+        "test": test_mask.to_numpy(),
+    }
+
+    # -----------------------------------------------------------------
+    # Load PPO agent
+    # -----------------------------------------------------------------
+
+    agent = load_agent(
+        CHECKPOINT
+    )
+
+    # -----------------------------------------------------------------
+    # Create pricing environment
+    # -----------------------------------------------------------------
+
+    reward_config = get_reward_config(args.reward_config)
+    environment = DynamicPricingEnvironment(
+        reward_config=reward_config,
+    )
+
+    # Make sure evaluation and training use the same reward
+    # configuration.
+
+    alpha = environment.reward_config.alpha
+    beta = environment.reward_config.beta
+
+    print()
+    print("Reward configuration:")
+    print(
+        f"  Alpha (margin):   {alpha}"
+    )
+    print(
+        f"  Beta (quantity):  {beta}"
+    )
+    print(
+        "  Reward type:      normalized relative reward"
+    )
+
+    results = []
+
+    # -----------------------------------------------------------------
+    # Evaluate each split
+    # -----------------------------------------------------------------
+
+    for split_name, mask in split_masks.items():
+
+        positions = np.flatnonzero(
+            mask
+        )
+
+        print()
+        print("-" * 70)
+        print(
+            f"{split_name.upper()} SET: "
+            f"{len(positions)} products"
+        )
+        print("-" * 70)
+
+        for position in positions:
+
+            state = dataset.states[
+                position
+            ]
+
+            product = dataset.products[
+                position
+            ]
+
+            # ---------------------------------------------------------
+            # Reset environment for this product
+            # ---------------------------------------------------------
+
+            environment.reset(
+                state=state,
+                product=product,
+            )
+
+            # ---------------------------------------------------------
+            # Baseline economics
+            # ---------------------------------------------------------
+
+            baseline_sales = (
+                product.last_monthly_sales
+            )
+
+            baseline_margin = (
+                environment
+                .observed_outcome
+                .estimated_margin
+            )
+
+            # Products without valid margin cannot be evaluated
+            # with the economic reward.
+            if baseline_margin is None:
+                continue
+
+            # ---------------------------------------------------------
+            # PPO selected action
+            # ---------------------------------------------------------
+
+            ppo_action = (
+                select_deterministic_action(
+                    agent,
+                    state,
+                )
+            )
+
+            if not (
+                0 <= ppo_action < ACTION_DIM
+            ):
+                raise RuntimeError(
+                    f"Invalid PPO action {ppo_action}. "
+                    f"Expected 0..{ACTION_DIM - 1}."
+                )
+
+            # ---------------------------------------------------------
+            # Translate 8-action PPO index to the environment's
+            # original 9-action index.
+            #
+            # PPO:
+            #   0 -> 5%
+            #   1 -> 10%
+            #   ...
+            #   7 -> 40%
+            #
+            # Environment:
+            #   1 -> 5%
+            #   2 -> 10%
+            #   ...
+            #   8 -> 40%
+            # ---------------------------------------------------------
+
+            environment_ppo_action = (
+                ppo_action + 1
+            )
+
+            ppo_outcome = (
+                environment.predict_action(
+                    environment_ppo_action
+                )
+            )
+
+            # ---------------------------------------------------------
+            # PPO economic changes
+            # ---------------------------------------------------------
+
+            ppo_delta_quantity = (
+                ppo_outcome.estimated_sales
+                - baseline_sales
+            )
+
+            ppo_delta_margin = (
+                ppo_outcome.estimated_margin
+                - baseline_margin
+            )
+
+            ppo_reward = (
+                calculate_relative_reward(
+                    delta_margin=ppo_delta_margin,
+                    delta_quantity=ppo_delta_quantity,
+                    baseline_margin=baseline_margin,
+                    baseline_quantity=baseline_sales,
+                    alpha=alpha,
+                    beta=beta,
+                )
+            )
+
+            # ---------------------------------------------------------
+            # Exhaustive counterfactual search
+            #
+            # IMPORTANT:
+            # The oracle for this experiment must use ONLY:
+            #
+            #   5,10,15,20,25,30,35,40%
+            #
+            # It must NOT include 0%.
+            # ---------------------------------------------------------
+
+            all_outcomes = (
+                environment.predict_all_actions()
+            )
+
+            oracle_values = {}
+
+            for environment_action, outcome in (
+                all_outcomes.items()
+            ):
+
+                # Environment action 0 corresponds to 0%,
+                # which is excluded from this experiment.
+
+                if environment_action == 0:
+                    continue
+
+                if (
+                    outcome.estimated_margin
+                    is None
+                ):
+                    continue
+
+                delta_quantity = (
+                    outcome.estimated_sales
+                    - baseline_sales
+                )
+
+                delta_margin = (
+                    outcome.estimated_margin
+                    - baseline_margin
+                )
+
+                oracle_reward = (
+                    calculate_relative_reward(
+                        delta_margin=delta_margin,
+                        delta_quantity=delta_quantity,
+                        baseline_margin=baseline_margin,
+                        baseline_quantity=baseline_sales,
+                        alpha=alpha,
+                        beta=beta,
+                    )
+                )
+
+                oracle_values[
+                    environment_action
+                ] = oracle_reward
+
+            if not oracle_values:
+                continue
+
+            # ---------------------------------------------------------
+            # Oracle action
+            # ---------------------------------------------------------
+
+            oracle_environment_action = max(
+                oracle_values,
+                key=oracle_values.get,
+            )
+
+            oracle_outcome = (
+                all_outcomes[
+                    oracle_environment_action
+                ]
+            )
+
+            oracle_reward = (
+                oracle_values[
+                    oracle_environment_action
+                ]
+            )
+
+            # Convert environment action back to
+            # the 0..7 PPO action indexing.
+
+            oracle_ppo_action = (
+                oracle_environment_action - 1
+            )
+
+            # ---------------------------------------------------------
+            # Save result
+            # ---------------------------------------------------------
+
+            results.append(
+                {
+                    "split": split_name,
+
+                    "source_row": int(
+                        source_indices[
+                            position
+                        ]
+                    ),
+
+                    "observed_discount": float(
+                        product.observed_discount
+                    ),
+
+                    # -------------------------------------------------
+                    # PPO
+                    # -------------------------------------------------
+
+                    "ppo_action": int(
+                        ppo_action
+                    ),
+
+                    "ppo_discount": float(
+                        DISCOUNT_BINS[
+                            ppo_action
+                        ]
+                    ),
+
+                    "ppo_environment_action": int(
+                        environment_ppo_action
+                    ),
+
+                    "ppo_reward": float(
+                        ppo_reward
+                    ),
+
+                    "ppo_sales": float(
+                        ppo_outcome
+                        .estimated_sales
+                    ),
+
+                    "ppo_revenue": float(
+                        ppo_outcome
+                        .estimated_revenue
+                    ),
+
+                    "ppo_margin": float(
+                        ppo_outcome
+                        .estimated_margin
+                    ),
+
+                    # -------------------------------------------------
+                    # Oracle
+                    # -------------------------------------------------
+
+                    "oracle_action": int(
+                        oracle_ppo_action
+                    ),
+
+                    "oracle_discount": float(
+                        DISCOUNT_BINS[
+                            oracle_ppo_action
+                        ]
+                    ),
+
+                    "oracle_environment_action": int(
+                        oracle_environment_action
+                    ),
+
+                    "oracle_reward": float(
+                        oracle_reward
+                    ),
+
+                    "oracle_sales": float(
+                        oracle_outcome
+                        .estimated_sales
+                    ),
+
+                    "oracle_revenue": float(
+                        oracle_outcome
+                        .estimated_revenue
+                    ),
+
+                    "oracle_margin": float(
+                        oracle_outcome
+                        .estimated_margin
+                    ),
+
+                    # -------------------------------------------------
+                    # Baseline
+                    # -------------------------------------------------
+
+                    "baseline_sales": float(
+                        baseline_sales
+                    ),
+
+                    "baseline_margin": float(
+                        baseline_margin
+                    ),
+
+                    # -------------------------------------------------
+                    # Additional PPO diagnostics
+                    # -------------------------------------------------
+
+                    "ppo_delta_quantity": float(
+                        ppo_delta_quantity
+                    ),
+
+                    "ppo_delta_margin": float(
+                        ppo_delta_margin
+                    ),
+
+                    "ppo_relative_delta_quantity": float(
+                        ppo_delta_quantity
+                        / max(
+                            abs(
+                                baseline_sales
+                            ),
+                            EPSILON,
+                        )
+                    ),
+
+                    "ppo_relative_delta_margin": float(
+                        ppo_delta_margin
+                        / max(
+                            abs(
+                                baseline_margin
+                            ),
+                            EPSILON,
+                        )
+                    ),
+                }
+            )
+
+    # -----------------------------------------------------------------
+    # Results dataframe
+    # -----------------------------------------------------------------
+
+    results_df = pd.DataFrame(
+        results
+    )
+
+    if results_df.empty:
+        raise RuntimeError(
+            "No valid evaluation results were produced."
+        )
+
+    # -----------------------------------------------------------------
+    # Save evaluation
+    # -----------------------------------------------------------------
+
+    OUTPUT_PATH.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    results_df.to_csv(
+        OUTPUT_PATH,
+        index=False,
+    )
+
+    # -----------------------------------------------------------------
+    # Evaluation summary
+    # -----------------------------------------------------------------
+
+    print()
+    print("=" * 70)
+    print("8-ACTION PPO EVALUATION SUMMARY")
+    print("=" * 70)
+
+    for split_name in [
+        "train",
+        "validation",
+        "test",
+    ]:
+
+        subset = results_df[
+            results_df["split"]
+            == split_name
+        ]
+
+        if subset.empty:
+            continue
+
+        ppo_reward_mean = (
+            subset[
+                "ppo_reward"
+            ].mean()
+        )
+
+        oracle_reward_mean = (
+            subset[
+                "oracle_reward"
+            ].mean()
+        )
+
+        regret = (
+            subset["oracle_reward"]
+            - subset["ppo_reward"]
+        ).mean()
+
+        oracle_match = (
+            subset["ppo_action"]
+            == subset["oracle_action"]
+        ).mean()
+
+        # PPO reward as percentage of oracle reward.
+        if abs(oracle_reward_mean) > EPSILON:
+            oracle_efficiency = (
+                ppo_reward_mean
+                / oracle_reward_mean
+                * 100.0
+            )
+        else:
+            oracle_efficiency = np.nan
+
+        print()
+        print(
+            split_name.upper()
+        )
+
+        print(
+            f"Samples:             "
+            f"{len(subset)}"
+        )
+
+        print(
+            f"PPO mean reward:     "
+            f"{ppo_reward_mean:.6f}"
+        )
+
+        print(
+            f"Oracle mean reward:  "
+            f"{oracle_reward_mean:.6f}"
+        )
+
+        print(
+            f"Mean oracle gap:     "
+            f"{regret:.6f}"
+        )
+
+        print(
+            f"PPO/oracle reward:   "
+            f"{oracle_efficiency:.2f}%"
+        )
+
+        print(
+            f"Oracle action match: "
+            f"{oracle_match * 100:.2f}%"
+        )
+
+        # -------------------------------------------------------------
+        # PPO distribution
+        # -------------------------------------------------------------
+
+        print()
+        print(
+            "PPO discount distribution:"
+        )
+
+        distribution = (
+            subset[
+                "ppo_discount"
+            ]
+            .value_counts()
+            .sort_index()
+        )
+
+        for discount in DISCOUNT_BINS:
+
+            count = int(
+                distribution.get(
+                    discount,
+                    0,
+                )
+            )
+
+            percentage = (
+                count
+                / len(subset)
+                * 100
+            )
+
+            print(
+                f"  {discount:>2.0f}% : "
+                f"{count:>5} "
+                f"({percentage:>6.2f}%)"
+            )
+
+        # -------------------------------------------------------------
+        # Oracle distribution
+        # -------------------------------------------------------------
+
+        print()
+        print(
+            "8-action oracle discount distribution:"
+        )
+
+        oracle_distribution = (
+            subset[
+                "oracle_discount"
+            ]
+            .value_counts()
+            .sort_index()
+        )
+
+        for discount in DISCOUNT_BINS:
+
+            count = int(
+                oracle_distribution.get(
+                    discount,
+                    0,
+                )
+            )
+
+            percentage = (
+                count
+                / len(subset)
+                * 100
+            )
+
+            print(
+                f"  {discount:>2.0f}% : "
+                f"{count:>5} "
+                f"({percentage:>6.2f}%)"
+            )
+
+    # -----------------------------------------------------------------
+    # Finite-value validation
+    # -----------------------------------------------------------------
+
+    numeric_columns = [
+        "ppo_reward",
+        "oracle_reward",
+        "ppo_sales",
+        "oracle_sales",
+        "ppo_revenue",
+        "oracle_revenue",
+        "ppo_margin",
+        "oracle_margin",
+        "baseline_sales",
+        "baseline_margin",
+        "ppo_delta_quantity",
+        "ppo_delta_margin",
+        "ppo_relative_delta_quantity",
+        "ppo_relative_delta_margin",
+    ]
+
+    finite = np.isfinite(
+        results_df[
+            numeric_columns
+        ].to_numpy()
+    ).all()
+
+    print()
+    print(
+        "Finite numeric results: "
+        f"{'PASS' if finite else 'FAIL'}"
+    )
+
+    # -----------------------------------------------------------------
+    # Action validity validation
+    # -----------------------------------------------------------------
+
+    valid_ppo_actions = (
+        results_df["ppo_action"]
+        .between(
+            0,
+            ACTION_DIM - 1,
+        )
+        .all()
+    )
+
+    valid_oracle_actions = (
+        results_df["oracle_action"]
+        .between(
+            0,
+            ACTION_DIM - 1,
+        )
+        .all()
+    )
+
+    valid_discounts = (
+        results_df["ppo_discount"]
+        .isin(
+            DISCOUNT_BINS
+        )
+        .all()
+        and
+        results_df["oracle_discount"]
+        .isin(
+            DISCOUNT_BINS
+        )
+        .all()
+    )
+
+    print(
+        "PPO action validity:    "
+        f"{'PASS' if valid_ppo_actions else 'FAIL'}"
+    )
+
+    print(
+        "Oracle action validity: "
+        f"{'PASS' if valid_oracle_actions else 'FAIL'}"
+    )
+
+    print(
+        "Discount validity:      "
+        f"{'PASS' if valid_discounts else 'FAIL'}"
+    )
+
+    print()
+    print(
+        f"Evaluated products: "
+        f"{len(results_df)}"
+    )
+
+    print(
+        f"Saved evaluation: "
+        f"{OUTPUT_PATH}"
+    )
+
+
+# ---------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------
+
+if __name__ == "__main__":
+    main()
+
+==================== src/environment/counterfactual_simulator.py ====================
+Lines: 377
+"""
+src/environment/counterfactual_simulator.py — Phase 8
+
+Counterfactual Sales Simulator
+===============================
+
+Wraps the FROZEN 112-D sales predictor to answer:
+
+    "Given a product state, what would the predicted monthly sales
+     growth rate be at each possible discount level?"
+
+This is the foundation for counterfactual reasoning in the PPO
+pricing environment (Phase 10).
+
+Architecture alignment
+----------------------
+Paper: "A Multimodal Deep Reinforcement Learning Framework for Dynamic
+        Pricing Optimisation in E-Commerce" (Liu et al., IEEE Access 2026)
+
+The paper's RL agent queries a sales-response model to evaluate candidate
+prices without interacting with a live market.  This module implements that
+query interface using the trained MLP predictor as the surrogate sales model.
+
+State representation
+--------------------
+ItaNet-111 (this project's available implementation):
+    Image features      :  32-D  (ResNet-50 + JL projection, seed=42)
+    Text features       :  32-D  (sentence-transformer + JL projection)
+    Attribute features  :  47-D  (one-hot / ordinal encoding)
+    ─────────────────────────────
+    Total state dim     : 111-D
+
+Paper target (unavailable — review text not in dataset):
+    Sentiment features  :  10-D  (would add to 121-D)
+
+Predictor input
+---------------
+state (111-D)  ‖  discount (1-D)  =  112-D  →  MLP  →  sales growth rate
+
+Discount action space
+---------------------
+DISCOUNT_BINS = [0, 5, 10, 15, 20, 25, 30, 35, 40]  (percentage)
+
+IMPORTANT — 0% discount:
+    0% is included because it is part of the paper-defined action space.
+    However, 0% discounts were NOT observed in the training data
+    (observed range: 5–40%).  Predictions at 0% are extrapolations
+    beyond the training support and should be treated with caution.
+    This is documented here rather than excluded, to match the paper's
+    action-space definition.
+
+Usage
+-----
+    from src.environment.counterfactual_simulator import CounterfactualSimulator
+
+    sim = CounterfactualSimulator()                  # loads frozen predictor
+    state = np.load("data/processed/state/state_train.npy")[0]  # (111,)
+
+    # Single discount query
+    pred = sim.predict(state, discount=20)           # float
+
+    # All 9 discounts at once
+    preds = sim.predict_all_discounts(state)         # dict[int, float]
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+import json
+import logging
+from typing import Dict, List, Optional, Union
+
+import numpy as np
+import torch
+
+# ---------------------------------------------------------------------------
+# Resolve project root so this module is importable from any cwd
+# ---------------------------------------------------------------------------
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+from src.models.sales_predictor import SalesPredictorMLP, load_frozen_predictor  # noqa: E402
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+STATE_DIM: int = 111
+"""Expected ItaNet-111 state dimension."""
+
+INPUT_DIM: int = 112
+"""Predictor input dimension = STATE_DIM + 1 (discount)."""
+
+DISCOUNT_BINS: List[int] = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+"""
+Paper-defined discrete discount action space (%).
+
+NOTE: 0% is out-of-training-support (observed discounts: 5–40%).
+Predictions at 0% are extrapolations and should be treated with caution.
+"""
+
+DEFAULT_CHECKPOINT_DIR: str = os.path.join(_PROJECT_ROOT, "models", "sales_predictor")
+
+# ---------------------------------------------------------------------------
+# CounterfactualSimulator
+# ---------------------------------------------------------------------------
+
+
+class CounterfactualSimulator:
+    """
+    Counterfactual sales simulator backed by the frozen 112-D MLP predictor.
+
+    The simulator is read-only: it never updates the predictor weights.
+    It is safe to call from PPO training without gradient pollution.
+
+    Parameters
+    ----------
+    checkpoint_dir : str, optional
+        Directory containing ``best_model.pth`` and ``config.json``.
+        Defaults to ``models/sales_predictor/`` relative to the project root.
+    device : torch.device, optional
+        Inference device.  Defaults to CPU (required: no CUDA assumed).
+
+    Raises
+    ------
+    FileNotFoundError
+        If the checkpoint directory or required files are missing.
+    ValueError
+        If the loaded predictor's ``input_dim`` does not equal 112.
+    """
+
+    def __init__(
+        self,
+        checkpoint_dir: str = DEFAULT_CHECKPOINT_DIR,
+        device: Optional[torch.device] = None,
+    ) -> None:
+        if device is None:
+            # CPU-first; Windows/Linux with no CUDA
+            device = torch.device("cpu")
+        self.device = device
+        self.checkpoint_dir = checkpoint_dir
+
+        self._model: SalesPredictorMLP = self._load_and_validate(checkpoint_dir, device)
+
+        # Cache config for inspection
+        config_path = os.path.join(checkpoint_dir, "config.json")
+        with open(config_path, encoding="utf-8") as f:
+            self.config: Dict = json.load(f)
+
+        logger.info(
+            "CounterfactualSimulator ready — predictor input_dim=%d, device=%s",
+            self.config.get("input_dim"),
+            device,
+        )
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _load_and_validate(checkpoint_dir: str, device: torch.device) -> SalesPredictorMLP:
+        """Load predictor through the project's canonical loading mechanism and validate."""
+        model = load_frozen_predictor(checkpoint_dir=checkpoint_dir, device=device)
+
+        # Confirm the first layer weight shape matches INPUT_DIM
+        first_weight = next(
+            (p for name, p in model.named_parameters() if "weight" in name), None
+        )
+        if first_weight is None:
+            raise RuntimeError("Predictor has no named weight parameters.")
+
+        actual_input_dim = first_weight.shape[1]
+        if actual_input_dim != INPUT_DIM:
+            raise ValueError(
+                f"Predictor input_dim={actual_input_dim} but expected {INPUT_DIM}. "
+                "Has the predictor been retrained with a different state dimension?"
+            )
+
+        return model
+
+    def _validate_state(self, state: np.ndarray) -> np.ndarray:
+        """Validate and reshape state to (STATE_DIM,)."""
+        state = np.asarray(state, dtype=np.float32)
+        if state.shape != (STATE_DIM,):
+            raise ValueError(
+                f"state must have shape ({STATE_DIM},), got {state.shape}. "
+                "Ensure the ItaNet-111 state pipeline has been run."
+            )
+        if not np.all(np.isfinite(state)):
+            raise ValueError(
+                "state contains NaN or Inf values. "
+                "Check that this row is in state_row_indices.npy (13 rows are excluded)."
+            )
+        return state
+
+    @staticmethod
+    def _validate_discount(discount: Union[int, float]) -> float:
+        """Validate that discount is one of the nine paper-defined bins."""
+        discount = float(discount)
+        if discount not in [float(b) for b in DISCOUNT_BINS]:
+            raise ValueError(
+                f"discount={discount} is not in DISCOUNT_BINS={DISCOUNT_BINS}. "
+                "Only paper-defined discrete discounts are supported."
+            )
+        return discount
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def predict(
+        self,
+        state: np.ndarray,
+        discount: Union[int, float],
+    ) -> float:
+        """
+        Predict the Estimated Monthly Sales Growth Rate for a single
+        (state, discount) pair.
+
+        Parameters
+        ----------
+        state : np.ndarray, shape (111,)
+            ItaNet-111 feature vector for one product observation.
+        discount : int or float
+            Discount percentage.  Must be one of DISCOUNT_BINS.
+
+        Returns
+        -------
+        float
+            Predicted monthly sales growth rate (raw, not log-transformed).
+            The predictor was trained on the raw target; no inverse transform
+            is required.
+
+        Notes
+        -----
+        0% discount is valid to query but is outside observed training support
+        (5–40% observed).  Treat extrapolated predictions with caution.
+        """
+        state = self._validate_state(state)
+        discount = self._validate_discount(discount)
+
+        state_t = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)  # (1, 111)
+        action_t = torch.tensor([[discount]], dtype=torch.float32, device=self.device)        # (1, 1)
+
+        with torch.no_grad():
+            pred = self._model.predict(state_t, action_t)  # (1,)
+
+        return float(pred.item())
+
+    def predict_all_discounts(self, state: np.ndarray) -> Dict[int, float]:
+        """
+        Predict the sales growth rate at every paper-defined discount level
+        for a single product state.
+
+        Parameters
+        ----------
+        state : np.ndarray, shape (111,)
+            ItaNet-111 feature vector for one product observation.
+
+        Returns
+        -------
+        dict
+            Mapping ``{discount_pct: predicted_sales_growth_rate}`` for all
+            9 discount levels in DISCOUNT_BINS.
+
+            Key   : int  — discount percentage
+            Value : float — predicted monthly sales growth rate
+
+        Notes
+        -----
+        0% discount is included because it is part of the paper-defined action
+        space, but it is outside the observed training support (5–40%).
+        """
+        state = self._validate_state(state)
+
+        n = len(DISCOUNT_BINS)
+        states_t = torch.tensor(
+            np.tile(state, (n, 1)), dtype=torch.float32, device=self.device
+        )  # (9, 111)
+        discounts_t = torch.tensor(
+            [[float(d)] for d in DISCOUNT_BINS], dtype=torch.float32, device=self.device
+        )  # (9, 1)
+
+        with torch.no_grad():
+            preds = self._model.predict(states_t, discounts_t)  # (9,)
+
+        return {int(d): float(p) for d, p in zip(DISCOUNT_BINS, preds.cpu().numpy())}
+
+    def predict_batch(
+        self,
+        states: np.ndarray,
+        discounts: Union[np.ndarray, List[Union[int, float]]],
+    ) -> np.ndarray:
+        """
+        Predict sales growth rates for a batch of (state, discount) pairs.
+
+        Parameters
+        ----------
+        states : np.ndarray, shape (B, 111)
+            Batch of ItaNet-111 state vectors.
+        discounts : array-like, shape (B,)
+            Discount percentages for each state.  Each must be in DISCOUNT_BINS.
+
+        Returns
+        -------
+        np.ndarray, shape (B,)
+            Predicted sales growth rates.
+        """
+        states = np.asarray(states, dtype=np.float32)
+        discounts = np.asarray(discounts, dtype=np.float32)
+
+        if states.ndim != 2 or states.shape[1] != STATE_DIM:
+            raise ValueError(
+                f"states must have shape (B, {STATE_DIM}), got {states.shape}."
+            )
+        if discounts.ndim != 1 or len(discounts) != len(states):
+            raise ValueError(
+                f"discounts must have shape (B,) matching states ({len(states)}), "
+                f"got {discounts.shape}."
+            )
+
+        invalid = [d for d in discounts if float(d) not in [float(b) for b in DISCOUNT_BINS]]
+        if invalid:
+            raise ValueError(f"Invalid discount values: {invalid}. Must be in {DISCOUNT_BINS}.")
+
+        if not np.all(np.isfinite(states)):
+            raise ValueError("states batch contains NaN or Inf values.")
+
+        states_t = torch.tensor(states, dtype=torch.float32, device=self.device)
+        discounts_t = torch.tensor(discounts, dtype=torch.float32, device=self.device).unsqueeze(1)
+
+        with torch.no_grad():
+            preds = self._model.predict(states_t, discounts_t)
+
+        return preds.cpu().numpy()
+
+    # ------------------------------------------------------------------
+    # Inspection helpers
+    # ------------------------------------------------------------------
+
+    @property
+    def input_dim(self) -> int:
+        """Predictor input dimension (always 112 = 111 state + 1 discount)."""
+        return INPUT_DIM
+
+    @property
+    def state_dim(self) -> int:
+        """State dimension (always 111 for ItaNet-111)."""
+        return STATE_DIM
+
+    @property
+    def discount_bins(self) -> List[int]:
+        """Paper-defined discrete action space."""
+        return list(DISCOUNT_BINS)
+
+    def summary(self) -> str:
+        """Return a human-readable summary of the simulator configuration."""
+        lines = [
+            "CounterfactualSimulator",
+            f"  state_dim    : {STATE_DIM}  (ItaNet-111: Image 32 + Text 32 + Attrs 47)",
+            f"  input_dim    : {INPUT_DIM}  (state + discount)",
+            f"  discount_bins: {DISCOUNT_BINS}",
+            f"  device       : {self.device}",
+            f"  checkpoint   : {self.checkpoint_dir}",
+            f"  architecture : {self.config.get('architecture', 'N/A')}",
+            f"  train_samples: {self.config.get('train_samples', 'N/A')}",
+            f"  val_samples  : {self.config.get('val_samples', 'N/A')}",
+            "",
+            "  NOTE: 0% discount is out-of-training-support (observed: 5-40%).",
+            "        Predictions at 0% are extrapolations — treat with caution.",
+        ]
+        return "\n".join(lines)
+
+
+==================== src/environment/ppo_dataset.py ====================
+Lines: 104
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from src.environment.pricing_environment import ProductContext
+
+
+@dataclass
+class PPODataset:
+    states: np.ndarray
+    products: list[ProductContext]
+    source_row_indices: np.ndarray
+
+
+def load_ppo_dataset(
+    state_path: str | Path = "data/processed/state/state.npy",
+    index_path: str | Path = "data/processed/state/state_row_indices.npy",
+    products_path: str | Path = "data/processed/products_clean.parquet",
+) -> PPODataset:
+    """
+    Load states and align them with product-level economic metadata.
+
+    Only rows with a valid Gross Margin Rate are retained because the
+    paper-style reward requires delta_margin.
+    """
+
+    states = np.load(state_path)
+    source_indices = np.load(index_path)
+
+    df = pd.read_parquet(products_path)
+
+    if len(states) != len(source_indices):
+        raise ValueError(
+            "State matrix and state-row-index array have different lengths."
+        )
+
+    if states.ndim != 2 or states.shape[1] != 111:
+        raise ValueError(
+            f"Expected state matrix shape (N, 111), got {states.shape}"
+        )
+
+    if not np.all(np.isfinite(states)):
+        raise ValueError("State matrix contains NaN or Inf.")
+
+    if np.any(source_indices < 0) or np.any(source_indices >= len(df)):
+        raise ValueError("State row indices contain invalid dataset rows.")
+
+    aligned = df.iloc[source_indices].copy()
+    aligned["_state_position"] = np.arange(len(aligned))
+
+    required_columns = [
+        "Buybox Price (USD)",
+        "Discount",
+        "Last Monthly Sales",
+        "Gross Margin Rate",
+    ]
+
+    missing_columns = [
+        column for column in required_columns
+        if column not in aligned.columns
+    ]
+
+    if missing_columns:
+        raise ValueError(
+            f"Missing required product columns: {missing_columns}"
+        )
+
+    # Paper-style reward requires margin.
+    valid_margin = aligned["Gross Margin Rate"].notna()
+
+    aligned = aligned.loc[valid_margin].copy()
+
+    retained_positions = aligned["_state_position"].to_numpy(
+        dtype=np.int64
+    )
+
+    filtered_states = states[retained_positions]
+
+    if len(filtered_states) != len(aligned):
+        raise RuntimeError(
+            "State/product alignment failed after margin filtering."
+        )
+
+    products = []
+
+    for _, row in aligned.iterrows():
+        products.append(
+            ProductContext(
+                observed_price=float(row["Buybox Price (USD)"]),
+                observed_discount=float(row["Discount"]),
+                last_monthly_sales=float(row["Last Monthly Sales"]),
+                gross_margin_rate=float(row["Gross Margin Rate"]),
+            )
+        )
+
+    return PPODataset(
+        states=filtered_states.astype(np.float32),
+        products=products,
+        source_row_indices=source_indices[retained_positions],
+    )
+
+==================== src/models/sales_predictor.py ====================
+Lines: 104
+"""
+Sales Predictor Module — Phase 5
+
+Provides:
+  SalesPredictorMLP   — the trained MLP architecture
+  load_frozen_predictor() — loads weights and freezes the model for PPO use
+
+After Phase 5, this module is the *only* interface the RL environment
+should use to query sales response. The predictor's weights must not be
+updated during PPO training.
+"""
+
+import os
+import json
+import torch
+import torch.nn as nn
+
+
+class SalesPredictorMLP(nn.Module):
+    """
+    MLP Sales Predictor.
+
+    IMPLEMENTATION DECISION: Architecture not fully specified in paper.
+    Architecture: 80 → 256 → BN → 128 → BN → 64 → 1
+    See docs/SALES_PREDICTOR_SPECIFICATION.md for justification.
+    """
+
+    def __init__(self, input_dim: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x).squeeze(-1)
+
+    def predict(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
+        """
+        Convenience method for RL environment usage.
+
+        Args:
+            state:  (B, state_dim) float tensor
+            action: (B,) or (B, 1) float tensor — discount percentage
+
+        Returns:
+            predicted sales growth: (B,) float tensor
+        """
+        if action.ndim == 1:
+            action = action.unsqueeze(-1)
+        x = torch.cat([state, action], dim=-1)
+        return self.forward(x)
+
+
+def load_frozen_predictor(
+    checkpoint_dir: str = "models/sales_predictor",
+    device: torch.device = None,
+) -> SalesPredictorMLP:
+    """
+    Load the trained sales predictor and freeze all parameters.
+
+    This is the interface Phase 6 (RL environment) should call.
+    The model will be in eval mode with requires_grad=False.
+
+    Args:
+        checkpoint_dir: directory containing best_model.pth and config.json
+        device: target device (defaults to MPS if available, else CPU)
+
+    Returns:
+        Frozen SalesPredictorMLP
+    """
+    if device is None:
+        device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
+    config_path = os.path.join(checkpoint_dir, "config.json")
+    weights_path = os.path.join(checkpoint_dir, "best_model.pth")
+
+    if not os.path.exists(weights_path):
+        raise FileNotFoundError(
+            f"Weights not found at {weights_path}. Run scripts/train_sales_predictor.py first."
+        )
+
+    with open(config_path) as f:
+        config = json.load(f)
+
+    model = SalesPredictorMLP(input_dim=config["input_dim"])
+    model.load_state_dict(torch.load(weights_path, map_location=device))
+    model.to(device)
+
+    # FREEZE — critical: PPO must not update the predictor
+    model.eval()
+    for param in model.parameters():
+        param.requires_grad = False
+
+    return model
+
+
+==========================================================================================
+2. CHECKPOINTS
+==========================================================================================
+
+--- models/ppo/ppo_batched_economic_50_updates.pth ---
+Top-level keys: ['actor_state_dict', 'critic_state_dict', 'actor_optimizer_state_dict', 'critic_optimizer_state_dict', 'config', 'updates', 'batch_size', 'seed', 'training_samples', 'total_decisions', 'state_dim', 'action_dim', 'reward', 'economic_environment', 'chronological_training_split']
+[actor_state_dict] keys: ['network.0.weight', 'network.0.bias', 'network.2.weight', 'network.2.bias', 'network.4.weight', 'network.4.bias']
+  network.0.weight: (128, 111)
+  network.0.bias: (128,)
+  network.2.weight: (128, 128)
+  network.2.bias: (128,)
+  network.4.weight: (9, 128)
+  network.4.bias: (9,)
+[critic_state_dict] keys: ['network.0.weight', 'network.0.bias', 'network.2.weight', 'network.2.bias', 'network.4.weight', 'network.4.bias']
+  network.0.weight: (128, 111)
+  network.0.bias: (128,)
+  network.2.weight: (128, 128)
+  network.2.bias: (128,)
+  network.4.weight: (1, 128)
+  network.4.bias: (1,)
+[actor_optimizer_state_dict] keys: ['state', 'param_groups']
+[critic_optimizer_state_dict] keys: ['state', 'param_groups']
+[config] keys: ['gamma', 'gae_lambda', 'clip_epsilon', 'entropy_coefficient', 'value_coefficient', 'batch_size', 'update_epochs', 'max_grad_norm']
+updates: 500
+batch_size: 64
+seed: 42
+training_samples: 19382
+total_decisions: 32000
+state_dim: 111
+action_dim: 9
+reward: 'paper-style delta margin + delta quantity'
+economic_environment: True
+chronological_training_split: 'Jan-Jun 2023'
+
+--- models/ppo/ppo_batched_supported_8action_500_updates.pth ---
+Top-level keys: ['actor_state_dict', 'critic_state_dict', 'actor_optimizer_state_dict', 'critic_optimizer_state_dict', 'config', 'updates', 'batch_size', 'seed', 'training_samples', 'total_decisions', 'state_dim', 'action_dim', 'discount_actions', 'reward', 'economic_environment', 'chronological_training_split', 'experiment', 'excluded_action']
+[actor_state_dict] keys: ['network.0.weight', 'network.0.bias', 'network.2.weight', 'network.2.bias', 'network.4.weight', 'network.4.bias']
+  network.0.weight: (128, 111)
+  network.0.bias: (128,)
+  network.2.weight: (128, 128)
+  network.2.bias: (128,)
+  network.4.weight: (8, 128)
+  network.4.bias: (8,)
+[critic_state_dict] keys: ['network.0.weight', 'network.0.bias', 'network.2.weight', 'network.2.bias', 'network.4.weight', 'network.4.bias']
+  network.0.weight: (128, 111)
+  network.0.bias: (128,)
+  network.2.weight: (128, 128)
+  network.2.bias: (128,)
+  network.4.weight: (1, 128)
+  network.4.bias: (1,)
+[actor_optimizer_state_dict] keys: ['state', 'param_groups']
+[critic_optimizer_state_dict] keys: ['state', 'param_groups']
+[config] keys: ['gamma', 'gae_lambda', 'clip_epsilon', 'entropy_coefficient', 'value_coefficient', 'batch_size', 'update_epochs', 'max_grad_norm']
+updates: 1000
+batch_size: 64
+seed: 42
+training_samples: 19382
+total_decisions: 64000
+state_dim: 111
+action_dim: 8
+discount_actions: [5, 10, 15, 20, 25, 30, 35, 40]
+reward: 'paper-style delta margin + delta quantity'
+economic_environment: True
+chronological_training_split: 'Jan-Jun 2023'
+experiment: '8-action observed-support PPO'
+excluded_action: '0% - outside observed training support'
+
+--- models/sales_predictor/best_model.pth ---
+Top-level keys: ['net.0.weight', 'net.0.bias', 'net.1.weight', 'net.1.bias', 'net.1.running_mean', 'net.1.running_var', 'net.1.num_batches_tracked', 'net.4.weight', 'net.4.bias', 'net.5.weight', 'net.5.bias', 'net.5.running_mean', 'net.5.running_var', 'net.5.num_batches_tracked', 'net.8.weight', 'net.8.bias', 'net.10.weight', 'net.10.bias']
+net.0.weight: tensor (256, 112)
+net.0.bias: tensor (256,)
+net.1.weight: tensor (256,)
+net.1.bias: tensor (256,)
+net.1.running_mean: tensor (256,)
+net.1.running_var: tensor (256,)
+net.1.num_batches_tracked: tensor ()
+net.4.weight: tensor (128, 256)
+net.4.bias: tensor (128,)
+net.5.weight: tensor (128,)
+net.5.bias: tensor (128,)
+net.5.running_mean: tensor (128,)
+net.5.running_var: tensor (128,)
+net.5.num_batches_tracked: tensor ()
+net.8.weight: tensor (64, 128)
+net.8.bias: tensor (64,)
+net.10.weight: tensor (1, 64)
+net.10.bias: tensor (1,)
+
+--- models/sales_predictor_train_only/best_model.pth ---
+Top-level keys: ['model_state_dict', 'input_dim', 'state_dim', 'seed', 'best_epoch', 'best_validation_mse']
+[model_state_dict] keys: ['network.0.weight', 'network.0.bias', 'network.1.weight', 'network.1.bias', 'network.1.running_mean', 'network.1.running_var', 'network.1.num_batches_tracked', 'network.4.weight', 'network.4.bias', 'network.5.weight', 'network.5.bias', 'network.5.running_mean', 'network.5.running_var', 'network.5.num_batches_tracked', 'network.8.weight', 'network.8.bias', 'network.10.weight', 'network.10.bias']
+  network.0.weight: (256, 112)
+  network.0.bias: (256,)
+  network.1.weight: (256,)
+  network.1.bias: (256,)
+  network.1.running_mean: (256,)
+  network.1.running_var: (256,)
+  network.1.num_batches_tracked: ()
+  network.4.weight: (128, 256)
+  network.4.bias: (128,)
+  network.5.weight: (128,)
+  network.5.bias: (128,)
+  network.5.running_mean: (128,)
+  network.5.running_var: (128,)
+  network.5.num_batches_tracked: ()
+  network.8.weight: (64, 128)
+  network.8.bias: (64,)
+  network.10.weight: (1, 64)
+  network.10.bias: (1,)
+input_dim: 112
+state_dim: 111
+seed: 42
+best_epoch: 5
+best_validation_mse: 26297.927235296374
+
+==========================================================================================
+3. STATE / FEATURE FILES
+==========================================================================================
+
+--- data/processed/state/state.npy ---
+Shape: (34028, 111) dtype: float64
+All finite: True
+
+--- data/processed/state/state_row_indices.npy ---
+Shape: (34028,) dtype: int64
+All finite: True
+First 10: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+--- data/processed/state_train_only/state.npy ---
+Shape: (34028, 111) dtype: float32
+All finite: True
+
+--- data/processed/state_train_only/state_row_indices.npy ---
+Shape: (34028,) dtype: int64
+All finite: True
+First 10: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+--- data/processed/features_train_only/attribute_features_train_only.npy ---
+Shape: (34041, 47) dtype: float32
+All finite: True
+
+--- data/processed/products_clean.parquet ---
+Shape: (34041, 39) Columns: ['Country Site', 'ASIN', 'Title', 'PASIN', 'Listing Time', 'Listing Duration', 'Main Category BSR Category', 'Main Category BSR Ranking', 'Main Category BSR Change Number', 'Main Category BSR Change Rate', 'Subcategory BSR Category', 'Subcategory BSR Ranking', 'Subcategory BSR Change Number', 'Subcategory BSR Change Rate', 'Buybox Price (USD)', 'Total Rating Count', 'New Rating Count', 'Rating Score', 'Positive Rating Rate', 'Negative Rating Rate', 'Total Review Count', 'New Review Count', 'Weight (pounds)', 'Volume (cubic inches)', 'Brand', 'Number of Variants', 'Buybox Seller', 'Buybox Seller Type', 'Buybox Seller Location', 'Delivery Method', 'Number of Sellers', 'FBA Shipping Fee (USD)', 'Gross Margin Rate', 'Main Image URL', 'Deal Month', 'Last Monthly Sales', 'Discount', 'Estimated Monthly Sales Growth Rate', 'MonthNum']
+ASIN first 5: ['B08Z2SG9FC', 'B097RFPPYT', 'B08P2STS1R', 'B09PDLBFKY', 'B09BKHHL5H']
+MonthNum first 5: [1, 1, 1, 1, 1]
+
+==========================================================================================
+4. GIT STATUS
+==========================================================================================
+ M scripts/evaluate_ppo_transfer.py
+ M scripts/train_ppo_transfer.py
+ M scripts/train_transfer_adapter.py
+ M src/transfer/ppo_warmstart.py
+?? PROJECT_INSPECTION_REPORT.md
+?? algorithm_comparison_inventory.txt
+?? app.py
+?? current_action_mapping_audit.txt
+?? current_artifact_lineage.csv
+?? current_attribute_feature_audit.txt
+?? current_checkpoint_contents.txt
+?? current_code_audit.txt
+?? current_environment_audit.txt
+?? current_predictor_lineage_audit.txt
+?? current_review_data_audit.txt
+?? current_reward_checkpoint_audit.txt
+?? current_state_lineage_audit.txt
+?? current_training_artifact_inventory.csv
+?? evaluation_audit_bundle.txt
+?? evaluator_compatibility_audit.txt
+?? inspect_project.py
+?? paper_alignment_review.txt
+?? paper_reproduction_source_bundle.txt
+?? paper_topk_review.txt
+?? ppo_agent_review.txt
+?? project_diagnostics.txt
+?? ranking_script_review.txt
+?? repository_audit_output.txt
+?? scripts/algorithm_comparison/
+?? scripts/analyze_economic_robustness.py
+?? scripts/audit_next_step_capabilities.py
+?? scripts/audit_paper_evaluation.py
+?? scripts/audit_ppo_actions_by_discount.py
+?? scripts/audit_ppo_paired_comparisons.py
+?? scripts/audit_test_results.py
+?? scripts/build_state_train_only.py
+?? scripts/compare_ppo_baselines.py
+?? scripts/compare_ppo_initial_trained.py
+?? scripts/compare_pricing_baselines.py
+?? scripts/diagnose_ppo_robustness.py
+?? scripts/diagnose_ppo_state_sensitivity.py
+?? scripts/diagnose_ppo_transfer_robustness.py
+?? scripts/evaluate_ppo_economic_robustness.py
+?? scripts/evaluate_ppo_policy.py
+?? scripts/evaluate_ppo_rankings.py
+?? scripts/evaluate_ppo_reproduction.py
+?? scripts/evaluate_ppo_statistics.py
+?? scripts/evaluate_ppo_transfer.py.backup_20261013_115609
+?? scripts/evaluate_ppo_transfer_robustness.py
+?? scripts/evaluate_uncertainty_aware_pricing.py
+?? scripts/extract_attributes_train_only.py
+?? scripts/paired_ppo_vs_fixed20.py
+?? scripts/rescore_ppo_reward_weights.py
+?? scripts/review_reward_evaluation_source.py
+?? scripts/run_profit_robustness_multiseed.py
+?? scripts/run_robustness_multiseed.py
+?? scripts/train_ppo_transfer.py.backup_20261013_115609
+?? scripts/train_sales_predictor_train_only.py
+?? src/models/baselines/
+?? src/transfer/ppo_warmstart.py.backup_20261012_171249
+
+
+AUDIT COMPLETE. No project files were intentionally modified.

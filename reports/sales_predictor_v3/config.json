@@ -1,0 +1,7 @@
+{
+  "input_dim": 113,
+  "state_dim": 111,
+  "input_contract": "state_111 || last_monthly_sales_1 || discount_1",
+  "target": "Estimated Monthly Sales Growth Rate",
+  "architecture": "MLP(256,128,64,1)"
+}
