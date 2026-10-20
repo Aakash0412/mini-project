@@ -98,3 +98,10 @@ reports/*
 !reports/sales_predictor_train_only/**
 !models/sales_predictor_v3/
 !models/sales_predictor_v3/**
+
+# Backup files — not part of the project
+*.backup_*
+
+# Audit source snapshot — external, not part of the repo
+methodology_audit_source/
+methodology_audit_source.zip
