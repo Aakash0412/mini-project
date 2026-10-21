@@ -359,3 +359,73 @@ Outputs: reports/uncertainty_aware_pricing/ (test_policy_comparison.csv,
 validation_uncertainty_calibration_rows.csv,
 validation_uncertainty_calibration_summary.csv, summary.json) and
 lambda_{0.0,0.5,2.0}/ subdirectories with corresponding outputs.
+
+---
+
+## 12. Epsilon-greedy exploration analysis
+
+To satisfy the standard exploration-exploitation diagnostic and to
+characterize the frozen PPO policy's behavior under controlled
+randomness, we sweep epsilon in {0.0, 0.05, 0.1, 0.2, 0.5, 1.0} with
+5 random seeds per epsilon (30 runs). For each run, the policy selects
+a uniformly random action with probability epsilon, and the frozen
+actor's argmax otherwise. Mean reward is computed under the frozen
+predictor using the same calculate_pricing_outcome function as v2.
+Exploitation rate is the fraction of products where the chosen action
+equals the argmax of mean simulated reward (the oracle).
+
+Results (reports/epsilon_greedy_sweep/epsilon_greedy_summary.csv):
+
+| epsilon | Mean reward | Exploitation rate |
+|---|---|---|
+| 0.00 | 0.3963 | 13.66% |
+| 0.05 | 0.3931 | 13.48% |
+| 0.10 | 0.3902 | 13.45% |
+| 0.20 | 0.3841 | 13.30% |
+| 0.50 | 0.3671 | 12.93% |
+| 1.00 | 0.3388 | 12.65% |
+
+### Two effects
+
+1. **Mean reward degrades monotonically with epsilon** (-14.5% from
+   epsilon=0 to epsilon=1), confirming that random actions cost reward
+   as expected. This is the standard cost-of-exploration result.
+
+2. **Exploitation rate barely changes** (13.66% -> 12.65%, a 1.01
+   percentage-point drop across the entire sweep). At epsilon=1, the
+   policy selects uniformly at random among 8 actions, and the
+   observed exploitation rate (12.65%) matches the theoretical random
+   chance of 1/8 = 12.5%. At epsilon=0, the frozen PPO policy achieves
+   13.66% exploitation — only 1.16 percentage points above random
+   chance.
+
+### Interpretation
+
+The exploitation rate at epsilon=0 (13.66%) is statistically
+indistinguishable from the random-chance rate (12.5%). This means the
+frozen PPO policy, evaluated under the frozen predictor, carries very
+little information about the greedy action. It is not exploiting the
+frozen reward function; it is, in effect, choosing actions that are
+close to random with respect to the frozen reward's argmax.
+
+This finding is consistent with §11 (12.28% exploitation rate on the
+§11 evaluation) and with the reward gap in §9 (PPO 0.4292 vs oracle
+0.5022). The risk-adjusted extension, in contrast, achieves 72.29%
+exploitation (5.9x the PPO level), which is the mechanistic
+explanation for its +14.94% mean reward improvement.
+
+The near-flat exploitation curve is informative: it shows that adding
+randomness does not meaningfully change how often the policy agrees
+with greedy, because the policy is already essentially at chance for
+that agreement. Retraining PPO to raise its exploitation rate would
+require the panel data the local dataset does not contain (§5 item 4)
+and would, at best, learn to imitate a predictor with R^2 = 0.025.
+The risk-adjusted extension addresses the same goal without retraining
+by directly maximizing mean reward minus variance.
+
+### Caveat
+
+The actor was not retrained. This is a policy wrapper applied at
+evaluation, not a change to the PPO training loop. It characterizes
+the frozen policy's behavior under controlled randomness; it does not
+modify the policy.
